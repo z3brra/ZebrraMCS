@@ -54,6 +54,9 @@ class AdminUser implements UserInterface, PasswordAuthenticatedUserInterface
     private ?DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $lastLoginAt = null;
+
+    #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
     /** @throws Exception */
@@ -201,6 +204,18 @@ class AdminUser implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getLastLoginAt(): ?\DateTimeImmutable
+    {
+        return $this->lastLoginAt;
+    }
+
+    public function setLastLoginAt(?\DateTimeImmutable $lastLoginAt): static
+    {
+        $this->lastLoginAt = $lastLoginAt;
 
         return $this;
     }

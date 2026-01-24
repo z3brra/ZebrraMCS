@@ -4,6 +4,9 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    api.version: '%env(string:API_VERSION)%'
+    api.commit: '%env(string:API_COMMIT)%'
+    api.build_date: '%env(string:API_BUILD_DATE)%'
 
 services:
     # default configuration for services in *this* file
@@ -19,6 +22,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    App\Controller\VersionController:
+        arguments:
+            $apiVersion: '%api.version%'
+            $apiCommit: '%api.commit%'
+            $apiBuildDate: '%api.build_date%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

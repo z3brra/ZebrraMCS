@@ -14,7 +14,8 @@ final class AdminMeService
     public function me(): AdminReadDTO
     {
         $this->accessControl->denyUnlessLogged();
-        $admin = $this->accessControl->getAdmin();
+        $this->accessControl->denyUnlessAdmin();
+        $admin = $this->accessControl->getActor();
 
         return AdminReadDTO::fromEntity($admin);
     }

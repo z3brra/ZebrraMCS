@@ -29,6 +29,32 @@ services:
             $apiCommit: '%api.commit%'
             $apiBuildDate: '%api.build_date%'
 
+    ### Error handler (strict API error format) ###
+    App\Http\Error\ErrorResponseFactory: ~
+
+    App\EventSubscriber\RequestIdSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
+    App\EventSubscriber\ApiExceptionSubscriber:
+        arguments:
+            $debug: '%kernel.debug%'
+        tags:
+            - { name: kernel.event_subscriber }
+
+    App\EventSubscriber\LexikJwtSuccessSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
+    App\EventSubscriber\LexikJwtErrorSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
+    App\EventSubscriber\LoginPayloadValidationSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
+    ### Login rate limiter subscriber (IP + email) ###
     App\Security\LoginRateLimitSubscriber:
         arguments:
             $loginLimiter: '@limiter.login'

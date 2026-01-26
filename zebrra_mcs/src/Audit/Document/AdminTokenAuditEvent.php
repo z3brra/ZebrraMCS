@@ -11,7 +11,7 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 #[ODM\Index(keys: ['actor.adminUuid' => 'asc'])]
 #[ODM\Index(keys: ['action' => 'asc'])]
 #[ODM\Index(keys: ['target.tokenUuid' => 'asc'])]
-final class AdminTokenAuditEvent
+class AdminTokenAuditEvent
 {
     #[ODM\Id]
     private ?string $id = null;

@@ -11,9 +11,9 @@ use Doctrine\ORM\Mapping as ORM;
 class ApiTokenScope
 {
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: ApiToken::class)]
+    #[ORM\ManyToOne(targetEntity: ApiToken::class, inversedBy: 'scopes')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ApiToken $token;
+    private ?ApiToken $token = null;
 
     #[ORM\Id]
     #[ORM\Column]
@@ -28,6 +28,12 @@ class ApiTokenScope
     public function getToken(): ApiToken
     {
         return $this->token;
+    }
+
+    public function setToken(?ApiToken $token): static
+    {
+        $this->token = $token;
+        return $this;
     }
 
     public function getDomainId(): int

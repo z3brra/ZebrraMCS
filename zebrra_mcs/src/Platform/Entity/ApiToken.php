@@ -3,10 +3,13 @@
 namespace App\Platform\Entity;
 
 use App\Platform\Repository\ApiTokenRepository;
+use App\Platform\Enum\Permission;
 
 use DateTimeImmutable;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 use Ramsey\Uuid\Uuid;
 
@@ -57,6 +60,18 @@ class ApiToken
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?self $replacedByToken = null;
 
+    /**
+     * @var Collection<int, ApiTokenPermission>
+     */
+    #[ORM\OneToMany(mappedBy: 'token', targetEntity: ApiTokenPermission::class, cascade: ['persist'], orphanRemoval: true)]
+    private Collection $permissions;
+
+    /**
+     * @var Collection<int, ApiTokenScope>
+     */
+    #[ORM\OneToMany(mappedBy: 'token', targetEntity: ApiTokenScope::class, cascade: ['persist'], orphanRemoval: true)]
+    private Collection $scopes;
+
     public function __construct(
         string $name,
         string $tokenHash,
@@ -68,6 +83,9 @@ class ApiToken
         $this->name = $name;
         $this->tokenHash = $tokenHash;
         $this->createdByAdmin = $createdByAdmin;
+
+        $this->permissions = new ArrayCollection();
+        $this->scopes = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]
@@ -177,6 +195,100 @@ class ApiToken
     {
         $this->replacedByToken = $replacedByToken;
         return $this;
+    }
+
+    /**
+     * @return Collection<int, ApiTokenPermission>
+     */
+    public function getPermissions(): Collection
+    {
+        return $this->permissions;
+    }
+
+    public function addPermission(ApiTokenPermission $permission): static
+    {
+        if (!$this->permissions->contains($permission)) {
+            $this->permissions->add($permission);
+            $permission->setToken($this);
+        }
+        return $this;
+    }
+
+    public function removePermission(ApiTokenPermission $permission): static
+    {
+        if ($this->permissions->removeElement($permission)) {
+            if ($permission->getToken() === $this) {
+                $permission->setToken(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getPermissionStrings(): array
+    {
+        $out = [];
+        foreach ($this->permissions as $permission) {
+            $out[] = $permission->getPermission();
+        }
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function hasPermission(Permission|string $permission): bool
+    {
+        $needle = $permission instanceof Permission ? $permission->value : $permission;
+        foreach ($this->permissions as $permission) {
+            if ($permission->getPermission() === $needle) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return Collection<int, ApiTokenScope>
+     */
+    public function getScopes(): Collection
+    {
+        return $this->scopes;
+    }
+
+    public function addScope(ApiTokenScope $scope): static
+    {
+        if (!$this->scopes->contains($scope)) {
+            $this->scopes->add($scope);
+            $scope->setToken($this);
+        }
+        return $this;
+    }
+
+    public function removeScope(ApiTokenScope $scope): static
+    {
+        if ($this->scopes->removeElement($scope)) {
+            if ($scope->getToken() === $this) {
+                $scope->setToken(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function getScopedDomainIds(): array
+    {
+        $out = [];
+        foreach ($this->scopes as $scope) {
+            $out[] = $scope->getDomainId();
+        }
+        $out = array_values(array_unique($out));
+        sort($out);
+        return $out;
     }
 }
 

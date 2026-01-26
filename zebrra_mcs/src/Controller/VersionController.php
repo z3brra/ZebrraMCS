@@ -18,9 +18,11 @@ final class VersionController extends AbstractController
     public function __invoke(): JsonResponse
     {
         $responseData = [
-            "apiVersion" => $this->apiVersion,
-            "commit" => $this->apiCommit,
-            "buildDate" => $this->apiBuildDate,
+            "data" => [
+                "apiVersion" => $this->apiVersion,
+                "commit" => $this->apiCommit,
+                "buildDate" => $this->apiBuildDate,
+            ]
         ];
 
         return new JsonResponse(

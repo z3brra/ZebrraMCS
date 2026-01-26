@@ -8,15 +8,13 @@ use App\Http\Error\{
 };
 use App\Platform\Entity\{
     ApiToken,
-    ApiTokenPermission,
-    ApiTokenScope
 };
 use App\Platform\Repository\ApiTokenRepository;
 
 use App\Service\RequestIdService;
 
 use Doctrine\ORM\EntityManagerInterface;
-use ReturnTypeWillChange;
+
 use Symfony\Component\HttpFoundation\{Request, Response};
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
@@ -70,29 +68,13 @@ final class ApiTokenAuthenticator extends AbstractAuthenticator
             throw new CustomUserMessageAuthenticationException('Invalid token.');
         }
 
-        $permissionRows = $this->entityManager->getRepository(ApiTokenPermission::class)
-            ->findBy(['token' => $apiToken]);
-
-        $scopeRows = $this->entityManager->getRepository(ApiTokenScope::class)
-            ->findBy(['token' => $apiToken]);
-
-        $permissions = array_values(array_map(
-            static fn (ApiTokenPermission $permission) => $permission->getPermission(),
-            $permissionRows
-        ));
-
-        $scopedDomainIds = array_values(array_map(
-            static fn (ApiTokenScope $scope) => $scope->getDomainId(),
-            $scopeRows
-        ));
-
         $apiToken->touchLastUsedAt();
         $this->entityManager->flush();
 
         $user = New ApiTokenUser(
             tokenUuid: $apiToken->getUuid(),
-            permissions: $permissions,
-            scopedDomainIds: $scopedDomainIds
+            permissions: $apiToken->getPermissionStrings(),
+            scopedDomainIds: $apiToken->getScopedDomainIds(),
         );
 
         return new SelfValidatingPassport(

@@ -12,9 +12,9 @@ use Doctrine\ORM\Mapping as ORM;
 class ApiTokenPermission
 {
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: ApiToken::class)]
+    #[ORM\ManyToOne(targetEntity: ApiToken::class, inversedBy: 'permissions')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ApiToken $token;
+    private ?ApiToken $token = null;
 
     #[ORM\Id]
     #[ORM\Column(length: 64)]
@@ -31,6 +31,12 @@ class ApiTokenPermission
     public function getToken(): ApiToken
     {
         return $this->token;
+    }
+
+    public function setToken(?ApiToken $token): static
+    {
+        $this->token = $token;
+        return $this;
     }
 
     public function getPermission(): string

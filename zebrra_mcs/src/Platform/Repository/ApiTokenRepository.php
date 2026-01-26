@@ -18,6 +18,11 @@ final class ApiTokenRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['tokenHash' => $tokenHash]);
     }
+
+    public function findOneByUuid(string $uuid): ?ApiToken
+    {
+        return $this->findOneBy(['uuid' => $uuid]);
+    }
 }
 
 ?>

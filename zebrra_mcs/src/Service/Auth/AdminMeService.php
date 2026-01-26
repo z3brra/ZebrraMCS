@@ -11,13 +11,15 @@ final class AdminMeService
         private AccessControlService $accessControl
     ) {}
 
-    public function me(): AdminReadDTO
+    public function me(): array
     {
         $this->accessControl->denyUnlessLogged();
         $this->accessControl->denyUnlessAdmin();
         $admin = $this->accessControl->getActor();
 
-        return AdminReadDTO::fromEntity($admin);
+        return [
+            "data" => AdminReadDTO::fromEntity($admin)
+        ];
     }
 }
 

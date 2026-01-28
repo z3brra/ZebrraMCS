@@ -4,3 +4,4 @@ var/
 .env
 .env.local
 dist/
+sqldump/

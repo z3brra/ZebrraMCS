@@ -61,6 +61,11 @@ services:
         tags:
             - { name: kernel.event_subscriber }
 
+    ### Error audit subscriber
+    App\Audit\EventSubscriber\ApiErrorAuditResponseSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
     ### Token hash
     App\Security\ApiTokenHasher:
         arguments:

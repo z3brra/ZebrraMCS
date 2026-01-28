@@ -21,6 +21,8 @@ use App\Security\ApiTokenHasher;
 use App\Service\Access\AccessControlService;
 use App\Service\ValidationService;
 
+use App\Audit\AdminTokenAuditLogger;
+
 use Doctrine\ORM\EntityManagerInterface;
 
 use Ramsey\Uuid\Uuid;
@@ -33,6 +35,8 @@ final class TokenAdminService
         private readonly ApiTokenHasher $tokenHasher,
         private readonly AccessControlService $accessControl,
         private readonly ValidationService $validationService,
+
+        private readonly AdminTokenAuditLogger $audit,
     ) {}
 
     public function create(TokenCreateDTO $tokenCreateDTO): array
@@ -62,6 +66,10 @@ final class TokenAdminService
 
         $this->entityManager->persist($token);
         $this->entityManager->flush();
+        $this->audit->success(
+            action: 'token.create',
+            token: $token
+        );
 
         return [
             'data' => new TokenCreatedSecretDTO($token->getUuid(), $plainToken),
@@ -89,8 +97,22 @@ final class TokenAdminService
         if (!$token) {
             throw ApiException::notFound('Token not found or does not exist.');
         }
+
+        if (!$token->isActive()) {
+            $this->audit->error(
+                action: 'token.revoke',
+                token: $token,
+                message: 'Token is not active.'
+            );
+            throw ApiException::conflict('Token is not active.');
+        }
+
         $token->revoke();
         $this->entityManager->flush();
+        $this->audit->success(
+            action: 'token.revoke',
+            token: $token,
+        );
     }
 
     /**
@@ -105,6 +127,11 @@ final class TokenAdminService
         }
 
         if (!$oldToken->isActive()) {
+            $this->audit->error(
+                action: 'token.rotate',
+                token: $oldToken,
+                message: 'Token is not active.'
+            );
             throw ApiException::conflict('Token is not active.');
         }
 
@@ -132,6 +159,17 @@ final class TokenAdminService
         $oldToken->setReplacedByToken($newToken);
 
         $this->entityManager->flush();
+
+        $this->audit->success(
+            action: 'token.rotate',
+            token: $newToken,
+            details: [
+                'oldTokenUuid' => $oldToken->getUuid(),
+                'newTokenUuid' => $newToken->getUuid(),
+                'copiedPermissionsCount' => count($newToken->getPermissionStrings()),
+                'copiedScopesCount' => count($newToken->getScopedDomainIds()),
+            ],
+        );
 
         return [
             "data" => new TokenCreatedSecretDTO($newToken->getUuid(), $plainToken)

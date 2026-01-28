@@ -24,6 +24,17 @@ final class MailDomainLinkRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['mailDomainId' => $mailDomainId]);
     }
+
+    public function existsByUuid(string $uuid): bool
+    {
+        return (bool) $this->createQueryBuilder('link')
+            ->select('1')
+            ->andWhere('link.uuid = :uuid')
+            ->setParameter('uuid', $uuid)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
 
 ?>

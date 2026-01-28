@@ -4,9 +4,11 @@ namespace App\Audit;
 
 use App\Platform\Entity\AdminUser;
 use App\Service\RequestIdService;
+use App\Security\ApiTokenUser;
 
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class AuditContextProvider
 {
@@ -39,25 +41,40 @@ final class AuditContextProvider
     /**
      * @return array<string, mixed>
      */
-    public function getActorAdmin(): array
+    public function getActor(): array
     {
-        $user = $this->tokenStorage->getToken()->getUser();
+        $user = $this->getCurrentUser();
 
-        if (!$user instanceof AdminUser) {
+        if ($user instanceof AdminUser) {
             return [
                 'type' => 'admin',
-                'adminUuid' => null,
-                'email' => null,
-                'roles' => [],
+                'adminUuid' => $user->getUuid(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+            ];
+        }
+
+        if ($user instanceof ApiTokenUser) {
+            return [
+                'type' => 'token',
+                'tokenUuid' => $user->getUserIdentifier(),
+                'roles' => $user->getRoles(),
+                'permissionsCount' => count($user->getPermissions()),
+                'scopesCount' => count($user->getScopedDomainIds()),
             ];
         }
 
         return [
-            'type' => 'admin',
-            'adminUuid' => $user->getUuid(),
-            'email' => $user->getEmail(),
-            'roles' => $user->getRoles(),
+            'type' => 'anonymous',
         ];
+    }
+
+    private function getCurrentUser(): ?UserInterface
+    {
+        $token = $this->tokenStorage->getToken();
+        $user = $token?->getUser();
+
+        return $user instanceof UserInterface ? $user : null;
     }
 }
 

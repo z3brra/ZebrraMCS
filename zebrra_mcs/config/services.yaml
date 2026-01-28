@@ -62,9 +62,7 @@ services:
             - { name: kernel.event_subscriber }
 
     ### Error audit subscriber
-    App\Audit\EventSubscriber\ApiErrorAuditSubscriber:
-        arguments:
-            $kernelDebug: '%kernel.debug%'
+    App\Audit\EventSubscriber\ApiErrorAuditResponseSubscriber:
         tags:
             - { name: kernel.event_subscriber }
 

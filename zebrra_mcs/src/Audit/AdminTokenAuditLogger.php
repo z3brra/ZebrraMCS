@@ -23,7 +23,7 @@ final class AdminTokenAuditLogger
         $event = new AdminTokenAuditEvent(
             requestId: $this->context->getRequestId(),
             action: $action,
-            actor: $this->context->getActorAdmin(),
+            actor: $this->context->getActor(),
             context: $this->context->getContext(),
             target: $this->targetFromToken($token),
             result: [
@@ -43,7 +43,7 @@ final class AdminTokenAuditLogger
         $event = new AdminTokenAuditEvent(
             requestId: $this->context->getRequestId(),
             action: $action,
-            actor: $this->context->getActorAdmin(),
+            actor: $this->context->getActor(),
             context: $this->context->getContext(),
             target: $this->targetFromToken($token),
             result: [

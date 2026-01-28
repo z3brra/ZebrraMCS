@@ -29,7 +29,7 @@ final class ApiErrorAuditLogger
             httpStatus: $httpStatus,
             errorCode: $errorCode,
             message: $message,
-            actor: $actorOverride ?? $this->context->getActorAdmin(),
+            actor: $actorOverride ?? $this->context->getActor(),
             context: $this->context->getContext(),
             details: $details,
         );

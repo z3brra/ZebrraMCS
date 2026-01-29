@@ -8,6 +8,7 @@ use App\Http\Error\ApiException;
 use App\Service\Domain\CreateDomainAdminService;
 use App\Service\Access\AccessControlService;
 use App\Service\Domain\ListDomainAdminService;
+use App\Service\Domain\ReadDomainAdminService;
 use App\Service\Domain\SearchDomainAdminService;
 use App\Service\RequestHelper;
 
@@ -73,6 +74,28 @@ final class AdminDomainController extends AbstractController
             data: $responseDTO,
             format: 'json',
             context: ['groups' => ['domain:list']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
+            json: true
+        );
+    }
+
+    #[Route('/{uuid}', name: 'read', methods: 'GET')]
+    public function read(
+        string $uuid,
+        ReadDomainAdminService $readDomainService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        $result = $readDomainService->read($uuid);
+
+        $responseData = $this->serializer->serialize(
+            data: $result,
+            format: 'json',
+            context: ['groups' => ['domain:read']]
         );
 
         return new JsonResponse(

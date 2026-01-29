@@ -4,10 +4,12 @@ namespace App\Controller;
 
 use App\DTO\Domain\DomainCreateDTO;
 use App\DTO\Domain\DomainSearchQueryDTO;
+use App\DTO\Domain\DomainStatusPatchDTO;
 use App\Http\Error\ApiException;
 use App\Service\Domain\CreateDomainAdminService;
 use App\Service\Access\AccessControlService;
 use App\Service\Domain\ListDomainAdminService;
+use App\Service\Domain\PatchDomainStatusAdminService;
 use App\Service\Domain\ReadDomainAdminService;
 use App\Service\Domain\SearchDomainAdminService;
 use App\Service\RequestHelper;
@@ -103,6 +105,29 @@ final class AdminDomainController extends AbstractController
             status: JsonResponse::HTTP_OK,
             json: true
         );
+    }
+
+    #[Route('/{uuid}/status', name: 'status', methods: 'PATCH')]
+    public function patchStatus(
+        string $uuid,
+        Request $request,
+        PatchDomainStatusAdminService $patchDomainStatusAdminService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        try {
+            $statusPatchDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: DomainStatusPatchDTO::class,
+                format: 'json',
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $patchDomainStatusAdminService->patch($uuid, $statusPatchDTO);
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 
     #[Route('/search', name: 'search', methods: 'POST')]

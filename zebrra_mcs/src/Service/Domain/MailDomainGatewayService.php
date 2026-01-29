@@ -3,7 +3,9 @@
 namespace App\Service\Domain;
 
 use App\DTO\Domain\DomainSearchQueryDTO;
+use App\Http\Error\ApiException;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final class MailDomainGatewayService
 {
@@ -47,6 +49,21 @@ final class MailDomainGatewayService
         ]);
 
         return (int) $this->mailConnection->lastInsertId();
+    }
+
+    public function setActive(int $mailDomainId, bool $active): void
+    {
+        $this->mailConnection->executeStatement(
+            'UPDATE domains SET active = :active WHERE id = :id',
+            [
+                'active' => $active ? 1 : 0,
+                'id' => $mailDomainId
+            ],
+            [
+                'active' => ParameterType::INTEGER,
+                'id' => ParameterType::INTEGER
+            ]
+        );
     }
 
     /**

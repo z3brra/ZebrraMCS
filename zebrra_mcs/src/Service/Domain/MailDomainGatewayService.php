@@ -38,6 +38,15 @@ final class MailDomainGatewayService
         return $row ?: null;
     }
 
+    public function existsByName(string $name): bool
+    {
+        $count = (int) $this->mailConnection->fetchOne(
+            'SELECT COUNT(*) FROM domains WHERE name = :name',
+            ['name' => $name]
+        );
+        return $count > 0;
+    }
+
     /**
      * @return int newly created mailserver.domains.id
      */
@@ -63,6 +72,17 @@ final class MailDomainGatewayService
                 'active' => ParameterType::INTEGER,
                 'id' => ParameterType::INTEGER
             ]
+        );
+    }
+
+    public function rename(int $mailDomainId, string $newName): void
+    {
+        $this->mailConnection->executeStatement(
+            'UPDATE domains SET name = :name WHERE id = :id',
+            [
+                'name' => $newName,
+                'id' => $mailDomainId
+            ],
         );
     }
 

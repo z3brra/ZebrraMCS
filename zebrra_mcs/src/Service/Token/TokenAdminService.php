@@ -10,12 +10,11 @@ use App\DTO\Token\{
 use App\Http\Error\ApiException;
 use App\Platform\Entity\{
     ApiToken,
-    ApiTokenPermission,
-    ApiTokenScope,
     AdminUser
 };
 use App\Platform\Repository\{
     ApiTokenRepository,
+    MailDomainLinkRepository
 };
 use App\Security\ApiTokenHasher;
 use App\Service\Access\AccessControlService;
@@ -32,6 +31,7 @@ final class TokenAdminService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApiTokenRepository $tokenRepository,
+        private readonly MailDomainLinkRepository $mailLinkRepository,
         private readonly ApiTokenHasher $tokenHasher,
         private readonly AccessControlService $accessControl,
         private readonly ValidationService $validationService,
@@ -57,11 +57,12 @@ final class TokenAdminService
         $token->setExpiresAt($tokenCreateDTO->expiresAt);
 
         foreach ($tokenCreateDTO->permissions as $permission) {
-            $token->addPermission(new ApiTokenPermission($token, (string) $permission));
+            $token->addPermissionString((string) $permission);
         }
 
-        foreach ($tokenCreateDTO->scopedDomainIds as $domainId) {
-            $token->addScope(new ApiTokenScope($token, (int) $domainId));
+        $scopes = $this->validateAndNormalizeDomainScopes($tokenCreateDTO->scopedDomainUuids);
+        foreach ($scopes as $domainUuid) {
+            $token->addScopeUuid((string) $domainUuid);
         }
 
         $this->entityManager->persist($token);
@@ -146,11 +147,11 @@ final class TokenAdminService
         $newToken->setExpiresAt($oldToken->getExpiresAt());
 
         foreach ($oldToken->getPermissionStrings() as $permission) {
-            $newToken->addPermission(new ApiTokenPermission($newToken, $permission));
+            $newToken->addPermissionString((string) $permission);
         }
 
-        foreach ($oldToken->getScopedDomainIds() as $domainId) {
-            $newToken->addScope(new ApiTokenScope($newToken, $domainId));
+        foreach ($oldToken->getScopedDomainUuids() as $domainUuid) {
+            $newToken->addScopeUuid((string) $domainUuid);
         }
 
         $this->entityManager->persist($newToken);
@@ -167,13 +168,88 @@ final class TokenAdminService
                 'oldTokenUuid' => $oldToken->getUuid(),
                 'newTokenUuid' => $newToken->getUuid(),
                 'copiedPermissionsCount' => count($newToken->getPermissionStrings()),
-                'copiedScopesCount' => count($newToken->getScopedDomainIds()),
+                'copiedScopesCount' => count($newToken->getScopedDomainUuids()),
             ],
         );
 
         return [
             "data" => new TokenCreatedSecretDTO($newToken->getUuid(), $plainToken)
         ];
+    }
+
+    /**
+     * @param list<string>|null $domainUuids
+     * @return list<string>
+     */
+    private function validateAndNormalizeDomainScopes(?array $domainUuids): array
+    {
+        if (!$domainUuids) {
+            return [];
+        }
+
+        $clean = [];
+        foreach ($domainUuids as $uuid) {
+            if (!is_string($uuid)) {
+                continue;
+            }
+            $uuid = trim($uuid);
+            if ($uuid === '') {
+                continue;
+            }
+            $clean[] = $uuid;
+        }
+
+        $clean = array_values(array_unique($clean));
+
+        $invalid = [];
+        foreach ($clean as $uuid) {
+            if (!Uuid::isValid($uuid)) {
+                $invalid[] = $uuid;
+            }
+        }
+        if ($invalid !== []) {
+            throw ApiException::validation(
+                message: 'Validation error',
+                details: [
+                    'violations' => array_map(
+                        static fn(string $uuid) => [
+                            'property' => 'scopedDomainUuids',
+                            'message' => 'Invalid UUID format.',
+                            'code' => null,
+                            'value' => $uuid
+                        ],
+                        $invalid
+                    ),
+                ],
+            );
+        }
+
+        $missing = [];
+        foreach ($clean as $uuid) {
+            if (!$this->mailLinkRepository->existsByUuid($uuid)) {
+                $missing[] = $uuid;
+            }
+        }
+
+        if ($missing !== []) {
+            throw ApiException::validation(
+                message: 'Validation error',
+                details: [
+                    'violations' => array_map(
+                        static fn(string $uuid) => [
+                            'property' => 'scopedDomainUuids',
+                            'message' => 'Domain does not exist.',
+                            'code' => null,
+                            'value' => $uuid,
+                        ],
+                        $missing
+                    ),
+                ],
+            );
+        }
+
+        sort($clean);
+        return $clean;
     }
 }
 

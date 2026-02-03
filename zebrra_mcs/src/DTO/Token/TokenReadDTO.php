@@ -39,7 +39,7 @@ final class TokenReadDTO
      * @var list<int>
      */
     #[Groups(['token:read'])]
-    public array $scopedDomainIds = [];
+    public array $scopedDomainUuids = [];
 
     public function __construct(
         string $uuid,
@@ -50,7 +50,7 @@ final class TokenReadDTO
         ?DateTimeImmutable $lastUsedAt = null,
         ?DateTimeImmutable $revokedAt = null,
         array $permissions,
-        array $scopedDomainIds
+        array $scopedDomainUuids
     ) {
         $this->uuid = $uuid;
         $this->name = $name;
@@ -60,7 +60,7 @@ final class TokenReadDTO
         $this->lastUsedAt = $lastUsedAt;
         $this->revokedAt = $revokedAt;
         $this->permissions = $permissions;
-        $this->scopedDomainIds = $scopedDomainIds;
+        $this->scopedDomainUuids = $scopedDomainUuids;
     }
 
     public static function fromEntity(ApiToken $apiToken): self
@@ -74,7 +74,7 @@ final class TokenReadDTO
             lastUsedAt: $apiToken->getLastUsedAt(),
             revokedAt: $apiToken->getRevokedAt(),
             permissions: $apiToken->getPermissionStrings(),
-            scopedDomainIds: $apiToken->getScopedDomainIds(),
+            scopedDomainUuids: $apiToken->getScopedDomainUuids(),
         );
     }
 }

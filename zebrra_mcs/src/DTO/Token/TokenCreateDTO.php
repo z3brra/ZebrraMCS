@@ -29,7 +29,7 @@ final class TokenCreateDTO
      */
     #[Groups(['token:create'])]
     #[Assert\Valid(groups: ['token:create'])]
-    public ?array $scopedDomainIds = [];
+    public ?array $scopedDomainUuids = [];
 
     #[Groups(['token:create'])]
     public ?DateTimeImmutable $expiresAt = null;
@@ -38,7 +38,7 @@ final class TokenCreateDTO
     {
         return $this->name === null &&
                empty($this->permissions) &&
-               empty($this->scopedDomainIds) &&
+               empty($this->scopedDomainUuids) &&
                $this->expiresAt === null;
     }
 }

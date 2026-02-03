@@ -71,5 +71,15 @@ services:
         arguments:
             $appSecret: '%env(APP_SECRET)%'
 
+
+    ### Doctrine DBAL mail connection ###
+    App\Command\BackfillMailDomainLinksCommand:
+        arguments:
+            $mailConnection: '@doctrine.dbal.mail_connection'
+
+    App\Service\Domain\MailDomainGatewayService:
+        arguments:
+            $mailConnection: '@doctrine.dbal.mail_connection'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

@@ -21,7 +21,7 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'IDX_API_TOKENS_EXPIRES_AT', columns: ['expiresAt'])]
 #[ORM\Index(name: 'IDX_API_TOKENS_LAST_USED_AT', columns: ['lastUsedAt'])]
 #[ORM\HasLifecycleCallbacks]
-class ApiToken
+final class ApiToken
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -69,7 +69,7 @@ class ApiToken
     /**
      * @var Collection<int, ApiTokenScope>
      */
-    #[ORM\OneToMany(mappedBy: 'token', targetEntity: ApiTokenScope::class, cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'token', targetEntity: ApiTokenScope::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $scopes;
 
     public function __construct(
@@ -205,25 +205,6 @@ class ApiToken
         return $this->permissions;
     }
 
-    public function addPermission(ApiTokenPermission $permission): static
-    {
-        if (!$this->permissions->contains($permission)) {
-            $this->permissions->add($permission);
-            $permission->setToken($this);
-        }
-        return $this;
-    }
-
-    public function removePermission(ApiTokenPermission $permission): static
-    {
-        if ($this->permissions->removeElement($permission)) {
-            if ($permission->getToken() === $this) {
-                $permission->setToken(null);
-            }
-        }
-        return $this;
-    }
-
     /**
      * @return list<string>
      */
@@ -236,18 +217,35 @@ class ApiToken
         return array_values(array_unique($out));
     }
 
-    /**
-     * @return list<string>
-     */
     public function hasPermission(Permission|string $permission): bool
     {
         $needle = $permission instanceof Permission ? $permission->value : $permission;
-        foreach ($this->permissions as $permission) {
-            if ($permission->getPermission() === $needle) {
+        foreach ($this->permissions as $perm) {
+            if ($perm->getPermission() === $needle) {
                 return true;
             }
         }
         return false;
+    }
+
+    public function addPermissionString(Permission|string $permission): static
+    {
+        $value = $permission instanceof Permission ? $permission->value : $permission;
+
+        foreach ($this->permissions as $perm) {
+            if ($perm->getPermission() === $value) {
+                return $this;
+            }
+        }
+
+        $this->permissions->add(new ApiTokenPermission($this, $value));
+        return $this;
+    }
+
+    public function clearPermissions(): static
+    {
+        $this->permissions->clear();
+        return $this;
     }
 
     /**
@@ -258,41 +256,49 @@ class ApiToken
         return $this->scopes;
     }
 
-    public function addScope(ApiTokenScope $scope): static
-    {
-        if (!$this->scopes->contains($scope)) {
-            $this->scopes->add($scope);
-            $scope->setToken($this);
-        }
-        return $this;
-    }
-
-    public function removeScope(ApiTokenScope $scope): static
-    {
-        if ($this->scopes->removeElement($scope)) {
-            if ($scope->getToken() === $this) {
-                $scope->setToken(null);
-            }
-        }
-        return $this;
-    }
-
     /**
-     * @return list<int>
+     * @return list<string>
      */
-    public function getScopedDomainIds(): array
+    public function getScopedDomainUuids(): array
     {
         $out = [];
         foreach ($this->scopes as $scope) {
-            $out[] = $scope->getDomainId();
+            $out[] = $scope->getDomainUuid();
         }
         $out = array_values(array_unique($out));
         sort($out);
         return $out;
     }
+
+    public function hasScope(string $domainUuid): bool
+    {
+        $domainUuid = trim($domainUuid);
+        foreach ($this->scopes as $scope) {
+            if ($scope->getDomainUuid() === $domainUuid) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function addScopeUuid(string $domainUuid): static
+    {
+        $domainUuid = trim($domainUuid);
+        if ($domainUuid === '') {
+            return $this;
+        }
+        if ($this->hasScope($domainUuid)) {
+            return $this;
+        }
+        $this->scopes->add(new ApiTokenScope($this, $domainUuid));
+        return $this;
+    }
+
+    public function clearScopes(): static
+    {
+        $this->scopes->clear();
+        return $this;
+    }
 }
-
-
-
 
 ?>

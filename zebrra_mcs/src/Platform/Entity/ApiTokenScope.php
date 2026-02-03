@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ApiTokenScopeRepository::class)]
 #[ORM\Table(name: 'api_token_scopes')]
+#[ORM\Index(name: 'IDX_API_TOKEN_SCOPES_DOMAIN_UUID', columns: ['domainUuid'])]
 class ApiTokenScope
 {
     #[ORM\Id]
@@ -16,13 +17,13 @@ class ApiTokenScope
     private ?ApiToken $token = null;
 
     #[ORM\Id]
-    #[ORM\Column]
-    private int $domainId;
+    #[ORM\Column(length: 36)]
+    private string $domainUuid;
 
-    public function __construct(ApiToken $token, int $domainId)
+    public function __construct(ApiToken $token, string $domainUuid)
     {
         $this->token = $token;
-        $this->domainId = $domainId;
+        $this->domainUuid = $domainUuid;
     }
 
     public function getToken(): ApiToken
@@ -36,9 +37,9 @@ class ApiTokenScope
         return $this;
     }
 
-    public function getDomainId(): int
+    public function getDomainUuid(): int
     {
-        return $this->domainId;
+        return $this->domainUuid;
     }
 }
 

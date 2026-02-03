@@ -6,22 +6,22 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 final class PaginationMetaDTO
 {
-    #[Groups(['token:list'])]
+    #[Groups(['token:list', 'domain:list'])]
     public int $page;
 
-    #[Groups(['token:list'])]
+    #[Groups(['token:list', 'domain:list'])]
     public int $perPage;
 
-    #[Groups(['token:list'])]
+    #[Groups(['token:list', 'domain:list'])]
     public int $total;
 
-    #[Groups(['token:list'])]
+    #[Groups(['token:list', 'domain:list'])]
     public int $totalPages;
 
-    #[Groups(['token:list'])]
+    #[Groups(['token:list', 'domain:list'])]
     public ?string $sort;
 
-    #[Groups(['token:list'])]
+    #[Groups(['token:list', 'domain:list'])]
     public ?string $order;
 
     public function __construct(

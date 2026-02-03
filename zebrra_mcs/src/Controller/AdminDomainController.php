@@ -9,6 +9,7 @@ use App\DTO\Domain\DomainStatusPatchDTO;
 use App\Http\Error\ApiException;
 use App\Service\Domain\CreateDomainAdminService;
 use App\Service\Access\AccessControlService;
+use App\Service\Domain\DeleteDomainAdminService;
 use App\Service\Domain\ListDomainAdminService;
 use App\Service\Domain\PatchDomainStatusAdminService;
 use App\Service\Domain\ReadDomainAdminService;
@@ -197,6 +198,19 @@ final class AdminDomainController extends AbstractController
             data: $responseData,
             status: JsonResponse::HTTP_OK,
             json: true
+        );
+    }
+
+    #[Route('/{uuid}', name: 'delete', methods: 'DELETE')]
+    public function delete(
+        string $uuid,
+        DeleteDomainAdminService $deleteDomainService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+        $deleteDomainService->hardDelete($uuid);
+        return new JsonResponse(
+            data: null,
+            status: JsonResponse::HTTP_NO_CONTENT
         );
     }
 }

@@ -179,6 +179,33 @@ final class MailDomainGatewayService
             'order' => $order
         ];
     }
+
+    public function countUsersByDomainId(int $mailDomainId): int
+    {
+        return (int) $this->mailConnection->fetchOne(
+            'SELECT COUNT(*) FROM users WHERE domain_id = :id',
+            ['id' => $mailDomainId]
+        );
+    }
+
+    public function countAliasesByDomainName(string $domainName): int
+    {
+        // NOTE : MySQL: LIKE '%@domain.tld'
+        $pattern = '%@' . $domainName;
+
+        return (int) $this->mailConnection->fetchOne(
+            'SELECT COUNT(*) FROM aliases WHERE source LIKE :p OR destination LIKE :p',
+            ['p' => $pattern]
+        );
+    }
+
+    public function deleteDomainById(int $mailDomainId): void
+    {
+        $this->mailConnection->executeStatement(
+            'DELETE FROM domains WHERE id = :id',
+            ['id' => $mailDomainId]
+        );
+    }
 }
 
 ?>

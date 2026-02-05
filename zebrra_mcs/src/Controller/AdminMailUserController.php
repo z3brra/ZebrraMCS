@@ -6,7 +6,7 @@ use App\DTO\MailUser\MailUserCreateDTO;
 use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
 use App\Service\MailUser\CreateMailUserAdminService;
-
+use App\Service\MailUser\ReadMailUserAdminService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
 use Symfony\Component\Routing\Attribute\Route;
@@ -40,7 +40,7 @@ final class AdminMailUserController extends AbstractController
         $result = $createMailUserService->create($mailUserCreateDTO);
 
         $responseData = $this->serializer->serialize(
-            data: $result,
+            data: ['data' => $result],
             format: 'json',
             context: ['groups' => ['user:read', 'user:create']]
         );
@@ -48,6 +48,28 @@ final class AdminMailUserController extends AbstractController
         return new JsonResponse(
             data: $responseData,
             status: JsonResponse::HTTP_CREATED,
+            json: true
+        );
+    }
+
+    #[Route('/{uuid}', name: 'read', methods: 'GET')]
+    public function read(
+        string $uuid,
+        ReadMailUserAdminService $readMailUserService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        $result = $readMailUserService->read($uuid);
+
+        $responseData = $this->serializer->serialize(
+            data: ['data' => $result],
+            format: 'json',
+            context: ['groups' => ['user:read']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
             json: true
         );
     }

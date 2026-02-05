@@ -29,10 +29,7 @@ final class CreateMailUserAdminService
         private readonly MailPasswordHasherService $passwordHasher,
     ) {}
 
-    /**
-     * @return array{data: MailUserReadDTO}
-     */
-    public function create(MailUserCreateDTO $mailUserCreateDTO): array
+    public function create(MailUserCreateDTO $mailUserCreateDTO): MailUserReadDTO
     {
         $this->validationService->validate($mailUserCreateDTO, ['user:create']);
 
@@ -95,15 +92,13 @@ final class CreateMailUserAdminService
         $this->entityManager->persist($link);
         $this->entityManager->flush();
 
-        return [
-            'data' => new MailUserReadDTO(
-                uuid: $link->getUuid(),
-                email: strtolower($mailUserCreateDTO->email),
-                domainUuid: $mailUserCreateDTO->domainUuid,
-                active: $mailUserCreateDTO->active,
-                plainPassword: $mailUserCreateDTO->plainPassword,
-            ),
-        ];
+        return new MailUserReadDTO(
+            uuid: $link->getUuid(),
+            email: strtolower($mailUserCreateDTO->email),
+            domainUuid: $mailUserCreateDTO->domainUuid,
+            active: $mailUserCreateDTO->active,
+            plainPassword: $mailUserCreateDTO->plainPassword,
+        );
     }
 }
 

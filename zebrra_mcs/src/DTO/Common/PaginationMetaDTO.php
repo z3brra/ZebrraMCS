@@ -2,7 +2,7 @@
 
 namespace App\DTO\Common;
 
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 final class PaginationMetaDTO
 {

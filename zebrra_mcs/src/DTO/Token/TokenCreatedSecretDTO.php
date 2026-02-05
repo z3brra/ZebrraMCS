@@ -2,7 +2,7 @@
 
 namespace App\DTO\Token;
 
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 final class TokenCreatedSecretDTO
 {

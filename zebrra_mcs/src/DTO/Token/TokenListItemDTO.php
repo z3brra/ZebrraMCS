@@ -5,7 +5,7 @@ namespace App\DTO\Token;
 use App\DTO\Admin\AdminRefDTO;
 
 use App\Platform\Entity\ApiToken;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 use DateTimeImmutable;
 

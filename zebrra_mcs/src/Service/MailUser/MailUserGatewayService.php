@@ -18,7 +18,7 @@ final class MailUserGatewayService
     ): int {
         $this->mailConnection->insert('users', [
             'domain_id' => $mailDomainId,
-            'email' => $email,
+            'email' => strtolower($email),
             'password' => $passwordHash,
             'active' => $active ? 1 : 0,
         ]);

@@ -73,6 +73,17 @@ final class MailUserGatewayService
 
         return (string) $exists === '1';
     }
+
+    public function listAll(?int $limit = null): array
+    {
+        $sql = 'SELECT id, email, domain_id FROM users ORDER BY id ASC';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . (int) $limit;
+        }
+
+        return $this->mailConnection->fetchAllAssociative($sql);
+    }
 }
 
 ?>

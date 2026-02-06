@@ -3,6 +3,7 @@
 namespace App\Service\MailUser;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final class MailUserGatewayService
 {
@@ -83,6 +84,21 @@ final class MailUserGatewayService
         }
 
         return $this->mailConnection->fetchAllAssociative($sql);
+    }
+
+    public function setActive(int $mailUserId, bool $active): void
+    {
+        $this->mailConnection->executeStatement(
+            'UPDATE users SET active = :active WHERE id = :id',
+            [
+                'active' => $active ? 1 : 0,
+                'id' => $mailUserId
+            ],
+            [
+                'active' => ParameterType::INTEGER,
+                'id' => ParameterType::INTEGER
+            ]
+        );
     }
 }
 

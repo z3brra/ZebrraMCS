@@ -3,10 +3,12 @@
 namespace App\Controller;
 
 use App\DTO\MailUser\MailUserCreateDTO;
+use App\DTO\MailUser\MailUserStatusDTO;
 use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
 use App\Service\MailUser\CreateMailUserAdminService;
 use App\Service\MailUser\ReadMailUserAdminService;
+use App\Service\MailUser\UpdateMailUserStatusAdminService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
 use Symfony\Component\Routing\Attribute\Route;
@@ -71,6 +73,32 @@ final class AdminMailUserController extends AbstractController
             data: $responseData,
             status: JsonResponse::HTTP_OK,
             json: true
+        );
+    }
+
+    #[Route('/{uuid}/status', name: 'status', methods: 'PATCH')]
+    public function status(
+        string $uuid,
+        Request $request,
+        UpdateMailUserStatusAdminService $updateMailUserStatusService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        try {
+            $updateMailUserStatusDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailUserStatusDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $updateMailUserStatusService->update($uuid, $updateMailUserStatusDTO);
+
+        return new JsonResponse(
+            data: null,
+            status: JsonResponse::HTTP_NO_CONTENT,
         );
     }
 

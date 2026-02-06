@@ -100,6 +100,36 @@ final class MailUserGatewayService
             ]
         );
     }
+
+    public function getPasswordHashById(int $mailUserId): ?string
+    {
+        $hash = $this->mailConnection->fetchOne(
+            'SELECT password FROM users WHERE id = :id LIMIT 1',
+            ['id' => $mailUserId],
+            ['id' => ParameterType::INTEGER]
+        );
+
+        if ($hash === false || $hash === null) {
+            return null;
+        }
+
+        return (string) $hash;
+    }
+
+    public function updatePasswordHash(int $mailUserId, string $passwordHash): void
+    {
+        $this->mailConnection->executeStatement(
+            'UPDATE users SET password = :password WHERE id = :id',
+            [
+                'password' => $passwordHash,
+                'id' => $mailUserId,
+            ],
+            [
+                'password' => ParameterType::STRING,
+                'id' => ParameterType::INTEGER,
+            ]
+        );
+    }
 }
 
 ?>

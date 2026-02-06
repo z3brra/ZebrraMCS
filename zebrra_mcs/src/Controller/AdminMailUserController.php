@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\DTO\MailUser\MailUserCreateDTO;
+use App\DTO\MailUser\MailUserPasswordChangeDTO;
 use App\DTO\MailUser\MailUserStatusDTO;
 use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
+use App\Service\MailUser\ChangeMailUserPasswordAdminService;
 use App\Service\MailUser\CreateMailUserAdminService;
 use App\Service\MailUser\ReadMailUserAdminService;
 use App\Service\MailUser\UpdateMailUserStatusAdminService;
@@ -99,6 +101,32 @@ final class AdminMailUserController extends AbstractController
         return new JsonResponse(
             data: null,
             status: JsonResponse::HTTP_NO_CONTENT,
+        );
+    }
+
+    #[Route('/{uuid}/password', name: 'change_password', methods: 'PATCH')]
+    public function changePassword(
+        string $uuid,
+        Request $request,
+        ChangeMailUserPasswordAdminService $changePasswordService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        try {
+            $changePasswordDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailUserPasswordChangeDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format');
+        }
+
+        $changePasswordService->change($uuid, $changePasswordDTO);
+
+        return new JsonResponse(
+            data: null,
+            status: JsonResponse::HTTP_NO_CONTENT
         );
     }
 

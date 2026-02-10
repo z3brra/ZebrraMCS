@@ -2,6 +2,7 @@
 
 namespace App\Service\MailUser;
 
+use App\DTO\MailUser\MailUserSearchQueryDTO;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 
@@ -129,6 +130,107 @@ final class MailUserGatewayService
                 'id' => ParameterType::INTEGER,
             ]
         );
+    }
+
+
+    public function listPaged(int $page, int $limit): array
+    {
+        $offset = ($page - 1) * $limit;
+
+        $total = (int) $this->mailConnection->fetchOne('SELECT COUNT(*) FROM users');
+
+        $queryBuilder = $this->mailConnection->createQueryBuilder();
+        $queryBuilder->select('user.id', 'user.domain_id', 'user.email', 'user.active', 'domain.name AS domain_name')
+            ->from('users', 'user')
+            ->leftJoin('user', 'domains', 'domain', 'domain.id = user.domain_id')
+            ->addOrderBy('user.active', 'DESC')
+            ->addOrderBy('domain.name', 'ASC')
+            ->addOrderBy('user.email', 'ASC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
+        
+        $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
+
+        return [
+            'total' => $total,
+            'rows' => $rows
+        ];
+    }
+
+    public function paginatedByQuery(MailUserSearchQueryDTO $query, ?int $mailDomainId = null): array
+    {
+        $page = max(1, $query->page);
+        $limit = max(1, $query->limit);
+
+        $needle = null;
+        if ($query->q !== null && trim($query->q) !== '') {
+            $needle = '%' . trim($query->q) . '%';
+        }
+
+        $sortMap = [
+            'email' => 'user.email',
+            'domain' => 'domain.name',
+            'active' => 'user.active'
+        ];
+
+        $sortField = $sortMap[$query->sort ?? ''] ?? 'user.active';
+        $order = strtolower($query->order) === 'asc' ? 'ASC' : 'DESC';
+
+        $applyFilters = function ($queryBuilder) use ($needle, $query, $mailDomainId): void {
+            if ($needle !== null) {
+                $queryBuilder->andWhere('user.email LIKE :needle')
+                    ->setParameter('needle', $needle);
+            }
+
+            if ($query->active !== null) {
+                $queryBuilder->andWhere('user.active = :active')
+                    ->setParameter('active', $query->active ? 1 : 0);
+            }
+
+            if ($mailDomainId !== null) {
+                $queryBuilder->andWhere('user.domain_id = :domainId')
+                    ->setParameter('domainId', $mailDomainId);
+            }
+        };
+        $countQueryBuilder = $this->mailConnection->createQueryBuilder();
+        $countQueryBuilder->select('COUNT(*)')
+            ->from('users', 'user')
+            ->leftJoin('user', 'domains', 'domain', 'domain.id = user.domain_id');
+        $applyFilters($countQueryBuilder);
+
+        $total = (int) $countQueryBuilder->executeQuery()->fetchOne();
+
+        $dataQueryBuilder = $this->mailConnection->createQueryBuilder();
+        $dataQueryBuilder->select('user.id', 'user.domain_id', 'user.email', 'user.active', 'domain.name AS domain_name')
+            ->from('users', 'user')
+            ->leftJoin('user', 'domains', 'domain', 'domain.id = user.domain_id');
+        $applyFilters($dataQueryBuilder);
+
+        $dataQueryBuilder->addOrderBy($sortField, $order);
+
+        if ($sortField !== 'user.active') {
+            $dataQueryBuilder->addOrderBy('user.active', 'DESC');
+        }
+        if ($sortField !== 'domain.name') {
+            $dataQueryBuilder->addOrderBy('domain.name', 'ASC');
+        }
+        if ($sortField !== 'user.email') {
+            $dataQueryBuilder->addOrderBy('user.email', 'ASC');
+        }
+
+        $dataQueryBuilder->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        $rows = $dataQueryBuilder->executeQuery()->fetchAllAssociative();
+
+        return [
+            'rows' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $limit,
+            'sort' => $sortField,
+            'order' => $order,
+        ];
     }
 }
 

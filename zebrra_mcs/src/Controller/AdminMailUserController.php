@@ -4,17 +4,22 @@ namespace App\Controller;
 
 use App\DTO\MailUser\MailUserCreateDTO;
 use App\DTO\MailUser\MailUserPasswordChangeDTO;
+use App\DTO\MailUser\MailUserSearchQueryDTO;
 use App\DTO\MailUser\MailUserStatusDTO;
 use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
 use App\Service\MailUser\ChangeMailUserPasswordAdminService;
 use App\Service\MailUser\CreateMailUserAdminService;
+use App\Service\MailUser\ListMailUserAdminService;
 use App\Service\MailUser\ReadMailUserAdminService;
+use App\Service\MailUser\SearchMailUserAdminService;
 use App\Service\MailUser\UpdateMailUserStatusAdminService;
+use App\Service\RequestHelper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Constraints\Json;
 
 #[Route('/api/v1/admin/users', name: 'app_api_v1_admin_users_')]
 final class AdminMailUserController extends AbstractController
@@ -127,6 +132,67 @@ final class AdminMailUserController extends AbstractController
         return new JsonResponse(
             data: null,
             status: JsonResponse::HTTP_NO_CONTENT
+        );
+    }
+
+    #[Route('/search', name: 'search', methods: 'POST')]
+    public function search(
+        Request $request,
+        SearchMailUserAdminService $searchMailUserService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        try {
+            /** @var MailUserSearchQueryDTO $searchQueryDTO */
+            $searchQueryDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailUserSearchQueryDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $searchQueryDTO->page = RequestHelper::readPage($request);
+        $searchQueryDTO->limit = RequestHelper::readLimit($request);
+
+        $result = $searchMailUserService->search($searchQueryDTO);
+
+        $responseData = $this->serializer->serialize(
+            data: $result,
+            format: 'json',
+            context: ['groups' => ['user:list']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
+            json: true
+        );
+    }
+
+    #[Route('', name: 'list', methods: 'GET')]
+    public function list(
+        Request $request,
+        ListMailUserAdminService $listMailUserService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        $page = RequestHelper::readPage($request);
+        $limit = RequestHelper::readLimit($request);
+
+        $readMailUserDTO = $listMailUserService->list($page, $limit);
+
+        $responseData = $this->serializer->serialize(
+            data: $readMailUserDTO,
+            format: 'json',
+            context: ['groups' => ['user:list']],
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
+            json: true
         );
     }
 

@@ -232,6 +232,15 @@ final class MailUserGatewayService
             'order' => $order,
         ];
     }
+
+    public function deleteUserById(int $mailUserId): void
+    {
+        $this->mailConnection->executeStatement(
+            'DELETE FROM users WHERE id = :id',
+            ['id' => $mailUserId],
+            ['id' => ParameterType::INTEGER]
+        );
+    }
 }
 
 ?>

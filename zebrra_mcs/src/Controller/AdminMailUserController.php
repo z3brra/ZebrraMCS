@@ -10,6 +10,7 @@ use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
 use App\Service\MailUser\ChangeMailUserPasswordAdminService;
 use App\Service\MailUser\CreateMailUserAdminService;
+use App\Service\MailUser\DeleteMailUserAdminService;
 use App\Service\MailUser\ListMailUserAdminService;
 use App\Service\MailUser\ReadMailUserAdminService;
 use App\Service\MailUser\SearchMailUserAdminService;
@@ -193,6 +194,19 @@ final class AdminMailUserController extends AbstractController
             data: $responseData,
             status: JsonResponse::HTTP_OK,
             json: true
+        );
+    }
+
+    #[Route('/{uuid}', name: 'delete', methods: 'DELETE')]
+    public function delete(
+        string $uuid,
+        DeleteMailUserAdminService $deleteMailUserService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessSuperAdmin();
+        $deleteMailUserService->delete($uuid);
+        return new JsonResponse(
+            data: null,
+            status: JsonResponse::HTTP_NO_CONTENT,
         );
     }
 

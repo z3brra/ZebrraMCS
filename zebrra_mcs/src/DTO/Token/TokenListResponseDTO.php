@@ -3,7 +3,7 @@
 namespace App\DTO\Token;
 
 use App\DTO\Common\PaginationMetaDTO;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 final class TokenListResponseDTO
 {

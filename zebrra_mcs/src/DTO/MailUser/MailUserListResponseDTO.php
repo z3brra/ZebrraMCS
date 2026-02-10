@@ -1,24 +1,24 @@
 <?php
 
-namespace App\DTO\Domain;
+namespace App\DTO\MailUser;
 
 use App\DTO\Common\PaginationMetaDTO;
 use Symfony\Component\Serializer\Attribute\Groups;
 
-final class DomainListResponseDTO
+final class MailUserListResponseDTO
 {
     /**
-     * @var list<DomainListItemDTO>
+     * @var list<MailUserListItemDTO>
      */
-    #[Groups(['domain:list'])]
+    #[Groups(['user:list'])]
     public array $data;
 
-    #[Groups(['domain:list'])]
+    #[Groups(['user:list'])]
     public PaginationMetaDTO $meta;
 
     public function __construct(
         array $data,
-        PaginationMetaDTO $meta
+        PaginationMetaDTO $meta,
     ) {
         $this->data = $data;
         $this->meta = $meta;

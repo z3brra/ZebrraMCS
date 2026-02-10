@@ -4,7 +4,7 @@ namespace App\DTO\Token;
 
 use App\Platform\Entity\ApiToken;
 use DateTimeImmutable;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 final class TokenReadDTO
 {

@@ -3,7 +3,7 @@
 namespace App\DTO\Admin;
 
 use App\Platform\Entity\AdminUser;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 final class AdminRefDTO
 {

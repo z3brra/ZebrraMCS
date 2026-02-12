@@ -63,6 +63,16 @@ final class MailAliasGatewayService
             ['dest' => $destinationEmail]
         );
     }
+
+    /**
+     * @return list<array{id: int, source: string, destination: string}>
+     */
+    public function fetchAll(): array
+    {
+        return $this->mailConnection->fetchAllAssociative(
+            'SELECT id, source, destination FROM aliases'
+        );
+    }
 }
 
 ?>

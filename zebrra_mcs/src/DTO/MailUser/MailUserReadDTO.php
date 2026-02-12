@@ -2,6 +2,8 @@
 
 namespace App\DTO\MailUser;
 
+use App\DTO\MailAlias\MailAliasReadDTO;
+
 use Symfony\Component\Serializer\Attribute\Groups;
 
 final class MailUserReadDTO
@@ -21,12 +23,16 @@ final class MailUserReadDTO
     #[Groups(['user:create'])]
     public ?string $plainPassword = null;
 
+    #[Groups(['user:read'])]
+    public array $aliases = [];
+
     public function __construct(
         string $uuid,
         string $email,
         string $domainUuid,
         bool $active,
         ?string $plainPassword = null,
+        array $aliases,
     )
     {
         $this->uuid = $uuid;
@@ -34,6 +40,7 @@ final class MailUserReadDTO
         $this->domainUuid =  $domainUuid;
         $this->active = $active;
         $this->plainPassword = $plainPassword;
+        $this->aliases = $aliases;
     }
 }
 ?>

@@ -3,6 +3,7 @@
 namespace App\Service\MailAlias;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final class MailAliasGatewayService
 {
@@ -31,6 +32,26 @@ final class MailAliasGatewayService
         );
 
         return $id !== false && $id !== null && $id !== '';
+    }
+
+    public function existsById(int $id): bool
+    {
+        $found = $this->mailConnection->fetchOne(
+            'SELECT 1 FROM aliases WHERE id = :id LIMIT 1',
+            ['id' => $id],
+            ['id' => ParameterType::INTEGER]
+        );
+
+        return $found !== false && $found !== null;
+    }
+
+    public function deleteById(int $id): int
+    {
+        return $this->mailConnection->executeStatement(
+            'DELETE FROM aliases WHERE id = :id',
+            ['id' => $id],
+            ['id' => ParameterType::INTEGER]
+        );
     }
 }
 

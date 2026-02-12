@@ -6,7 +6,8 @@ use App\DTO\MailAlias\MailAliasCreateDTO;
 use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
 use App\Service\MailAlias\{
-    CreateMailAliasAdminService
+    CreateMailAliasAdminService,
+    DeleteMailAliasAdminService
 };
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -53,6 +54,17 @@ final class AdminMailAliasController extends AbstractController
             status: JsonResponse::HTTP_CREATED,
             json: true
         );
+    }
+
+    #[Route('/{uuid}', name: 'delete', methods: 'DELETE')]
+    public function delete(
+        string $uuid,
+        DeleteMailAliasAdminService $deleteMailAliasService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        $deleteMailAliasService->delete($uuid);
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }
 

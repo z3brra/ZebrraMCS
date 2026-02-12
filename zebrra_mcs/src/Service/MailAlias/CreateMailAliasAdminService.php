@@ -14,7 +14,6 @@ use App\Service\MailUser\MailUserGatewayService;
 use App\Service\Domain\MailDomainGatewayService;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\Loader\Configurator\App;
 
 final class CreateMailAliasAdminService
 {

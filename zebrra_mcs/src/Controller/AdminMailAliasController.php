@@ -3,13 +3,16 @@
 namespace App\Controller;
 
 use App\DTO\MailAlias\MailAliasCreateDTO;
+use App\DTO\MailAlias\MailAliasSearchQueryDTO;
 use App\Http\Error\ApiException;
 use App\Service\Access\AccessControlService;
 use App\Service\MailAlias\{
     CreateMailAliasAdminService,
-    DeleteMailAliasAdminService
+    DeleteMailAliasAdminService,
+    ListMailAliasAdminService,
+    SearchMailAliasAdminService
 };
-
+use App\Service\RequestHelper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
 use Symfony\Component\Routing\Attribute\Route;
@@ -65,6 +68,70 @@ final class AdminMailAliasController extends AbstractController
 
         $deleteMailAliasService->delete($uuid);
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
+    }
+
+    #[Route('', name: 'list', methods: 'GET')]
+    public function list(
+        Request $request,
+        ListMailAliasAdminService $listMailAliasService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        $page = RequestHelper::readPage($request);
+        $limit = RequestHelper::readLimit($request);
+
+        $mailAliasListDTO = $listMailAliasService->list($page, $limit);
+
+        $responseData = $this->serializer->serialize(
+            data: $mailAliasListDTO,
+            format: 'json',
+            context: ['groups' => ['alias:list']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
+            json: true
+        );
+    }
+
+    #[Route('/search', name: 'search', methods: 'POST')]
+    public function search(
+        Request $request,
+        SearchMailAliasAdminService $searchMailAliasService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+
+        $page = RequestHelper::readPage($request);
+        $limit = RequestHelper::readLimit($request);
+
+        try {
+            /** @var MailAliasSearchQueryDTO $searchQueryAliasDTO */
+            $searchQueryAliasDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailAliasSearchQueryDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $searchQueryAliasDTO->page = $page;
+        $searchQueryAliasDTO->limit = $limit;
+
+        $mailAliasListDTO = $searchMailAliasService->search($searchQueryAliasDTO);
+
+        $responseData = $this->serializer->serialize(
+            data: $mailAliasListDTO,
+            format: 'json',
+            context: ['groups' => ['alias:list']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
+            json: true
+        );
     }
 }
 

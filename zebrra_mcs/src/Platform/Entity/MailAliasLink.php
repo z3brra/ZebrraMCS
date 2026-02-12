@@ -14,6 +14,8 @@ use Ramsey\Uuid\Uuid;
 #[ORM\UniqueConstraint(name: 'UNIQ_MAIL_ALIAS_LINK_UUID', fields: ['uuid'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_MAIL_ALIAS_LINK_MAIL_ALIAS_ID', fields: ['mailAliasId'])]
 #[ORM\Index(name: 'IDX_MAIL_ALIAS_LINK_MAIL_ALIAS_ID', columns: ['mailAliasId'])]
+#[ORM\Index(name: 'IDX_MAIL_ALIAS_LINK_SOURCE', columns: ['sourceEmail'])]
+#[ORM\Index(name: 'IDX_MAIL_ALIAS_LINK_DESTINATION', columns: ['destinationEmail'])]
 class MailAliasLink
 {
     #[ORM\Id]
@@ -27,13 +29,21 @@ class MailAliasLink
     #[ORM\Column]
     private int $mailAliasId;
 
+    #[ORM\Column(length: 320)]
+    private string $sourceEmail;
+
+    #[ORM\Column(length: 320)]
+    private string $destinationEmail;
+
     #[ORM\Column]
     private DateTimeImmutable $createdAt;
 
-    public function __construct(int $mailAliasId)
+    public function __construct(int $mailAliasId, string $sourceEmail, string $destinationEmail)
     {
         $this->uuid = Uuid::uuid7()->toString();
         $this->mailAliasId = $mailAliasId;
+        $this->sourceEmail = mb_strtolower(trim($sourceEmail));
+        $this->destinationEmail = mb_strtolower(trim($destinationEmail));
         $this->createdAt = new DateTimeImmutable();
     }
 
@@ -50,6 +60,16 @@ class MailAliasLink
     public function getMailAliasId(): int
     {
         return $this->mailAliasId;
+    }
+
+    public function getSourceEmail(): string
+    {
+        return $this->sourceEmail;
+    }
+
+    public function getDestinationEmail(): string
+    {
+        return $this->destinationEmail;
     }
 
     public function getCreatedAt(): DateTimeImmutable

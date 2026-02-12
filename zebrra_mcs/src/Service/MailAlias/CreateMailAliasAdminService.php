@@ -106,7 +106,7 @@ final class CreateMailAliasAdminService
 
             $mailAliasId = $this->mailAliasGateway->insert($source, $destination);
 
-            $link = new MailAliasLink($mailAliasId);
+            $link = new MailAliasLink($mailAliasId, $source, $destination);
             $this->entityManager->persist($link);
 
             $created[] = new MailAliasCreatedRowDTO(

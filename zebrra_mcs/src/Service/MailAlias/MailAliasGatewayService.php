@@ -53,6 +53,16 @@ final class MailAliasGatewayService
             ['id' => ParameterType::INTEGER]
         );
     }
+
+    public function findByDestinationEmail(string $destinationEmail): array
+    {
+        $destinationEmail = mb_strtolower(trim($destinationEmail));
+
+        return $this->mailConnection->fetchAllAssociative(
+            'SELECT id, source, destination FROM aliases WHERE LOWER(destination) = :dest ORDER BY source ASC',
+            ['dest' => $destinationEmail]
+        );
+    }
 }
 
 ?>

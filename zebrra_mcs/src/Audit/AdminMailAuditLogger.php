@@ -93,6 +93,21 @@ final class AdminMailAuditLogger
             'mailDomainId' => $mailDomainId
         ];
     }
+
+    public function auditTargetMailAlias(
+        ?string $aliasUuid,
+        ?int $mailAliasId,
+        string $sourceEmail,
+        string $destinationEmail
+    ): array {
+        return [
+            'type' => 'mail_alias',
+            'aliasUuid' => $aliasUuid,
+            'mailAliasId' => $mailAliasId,
+            'sourceEmail' => $sourceEmail,
+            'destinationEmail' => $destinationEmail,
+        ];
+    }
 }
 
 ?>

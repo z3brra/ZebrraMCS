@@ -5,6 +5,7 @@ namespace App\Service\MailUser;
 use App\DTO\MailUser\MailUserPasswordChangeDTO;
 use App\Http\Error\ApiException;
 use App\Service\ValidationService;
+use App\Audit\AdminMailAuditLogger;
 
 final class ChangeMailUserPasswordAdminService
 {
@@ -14,6 +15,7 @@ final class ChangeMailUserPasswordAdminService
         private readonly MailPasswordHasherService $passwordHasher,
 
         private readonly ValidationService $validationService,
+        private readonly AdminMailAuditLogger $audit,
     ) {}
 
     public function change(string $uuid, MailUserPasswordChangeDTO $changePasswordDTO): void
@@ -46,11 +48,40 @@ final class ChangeMailUserPasswordAdminService
         }
 
         if (!password_verify($changePasswordDTO->oldPassword, $storedHashForVerify)) {
+            $this->audit->error(
+                action: 'mail_user.password_change',
+                target: $this->audit->auditTargetMailUser(
+                    userUuid: $link->getUuid(),
+                    mailUserId: $link->getMailUserId(),
+                    email: $link->getEmail(),
+                    domainUuid: null,
+                    mailDomainId: $link->getMailDomainId(),
+                ),
+                message: 'Invalid old password',
+                details: [
+                    'reason' => 'old_password_invalid',
+                ],
+            );
+
             throw ApiException::authInvalid('Invalid credentials.');
         }
 
         $newHash = $this->passwordHasher->hashForDovecot($changePasswordDTO->newPassword);
         $this->mailUserGateway->updatePasswordHash($link->getMailUserId(), $newHash);
+
+        $this->audit->success(
+            action: 'mail_user.password_change',
+            target: $this->audit->auditTargetMailUser(
+                userUuid: $link->getUuid(),
+                mailUserId: $link->getMailUserId(),
+                email: $link->getEmail(),
+                domainUuid: null,
+                mailDomainId: $link->getMailDomainId(),
+            ),
+            details: [
+                'hashAlgo' => 'BLF-CRYPT'
+            ],
+        );
     }
 }
 

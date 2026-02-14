@@ -6,13 +6,15 @@ use App\DTO\MailUser\MailUserStatusDTO;
 use App\Enum\MailUserStatusAction;
 use App\Http\Error\ApiException;
 use App\Service\ValidationService;
+use App\Audit\AdminMailAuditLogger;
 
 final class UpdateMailUserStatusAdminService
 {
     public function __construct(
         private readonly ValidationService $validationService,
         private readonly MailUserLinkResolver $resolver,
-        private readonly MailUserGatewayService $mailUserGateway
+        private readonly MailUserGatewayService $mailUserGateway,
+        private readonly AdminMailAuditLogger $audit,
     ) {}
 
     public function update(string $uuid, MailUserStatusDTO $mailUserStatusDTO): void
@@ -34,13 +36,46 @@ final class UpdateMailUserStatusAdminService
             MailUserStatusAction::DISABLE => false,
         };
 
+        $actionName = $targetActive ? 'mail_user.enable' : 'mail_user.disable';
+
         if ($currentActive === $targetActive) {
+            $this->audit->error(
+                action: $actionName,
+                target: $this->audit->auditTargetMailUser(
+                    userUuid: $link->getUuid(),
+                    mailUserId: $link->getMailUserId(),
+                    email: $link->getEmail(),
+                    domainUuid: null,
+                    mailDomainId: $link->getMailDomainId(),
+                ),
+                message: $targetActive ? 'User already enabled.' : 'User already disabled.',
+                details: [
+                    'currentActive' => $currentActive,
+                    'targetActive' => $targetActive,
+                ],
+            );
+
             throw ApiException::conflict(
                 $targetActive ? 'User is already enabled' : 'User is already disabled.'
             );
         }
 
         $this->mailUserGateway->setActive($link->getMailUserId(), $targetActive);
+
+        $this->audit->success(
+            action: $actionName,
+            target: $this->audit->auditTargetMailUser(
+                userUuid: $link->getUuid(),
+                mailUserId: $link->getMailUserId(),
+                email: $link->getEmail(),
+                domainUuid: null,
+                mailDomainId: $link->getMailDomainId(),
+            ),
+            details: [
+                'previousActive' => $currentActive,
+                'newActive' => $targetActive,
+            ]
+        );
     }
 }
 

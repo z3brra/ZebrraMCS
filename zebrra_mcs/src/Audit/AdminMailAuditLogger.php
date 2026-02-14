@@ -76,6 +76,23 @@ final class AdminMailAuditLogger
             } catch (\Throwable) {}
         }
     }
+
+    public function auditTargetMailUser(
+        ?string $userUuid,
+        ?int $mailUserId,
+        ?string $email,
+        ?string $domainUuid,
+        ?int $mailDomainId,
+    ): array {
+        return [
+            'type' => 'mail_user',
+            'userUuid' => $userUuid,
+            'mailUserId' => $mailUserId,
+            'email' => $email,
+            'domainUuid' => $domainUuid,
+            'mailDomainId' => $mailDomainId
+        ];
+    }
 }
 
 ?>

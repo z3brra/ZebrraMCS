@@ -47,12 +47,11 @@ final class CreateDomainAdminService
 
             $this->audit->error(
                 action: 'domain.create',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $link->getUuid(),
-                    'name' => $name,
-                    'mailDomainId' => $mailDomainId,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $link->getUuid(),
+                    mailDomainId: $mailDomainId,
+                    name: $name,
+                ),
                 message: 'Domain already exists.',
                 details: [
                     'attemptedActive' => $active
@@ -76,12 +75,11 @@ final class CreateDomainAdminService
 
         $this->audit->success(
             action: 'domain.create',
-            target: [
-                'type' => 'domain',
-                'domainUuid' => $link->getUuid(),
-                'name' => $name,
-                'mailDomainId' => $mailDomainId,
-            ],
+            target: $this->audit->auditTargetDomain(
+                domainUuid: $link->getUuid(),
+                mailDomainId: $mailDomainId,
+                name: $name,
+            ),
             details: [
                 'active' => $active
             ],

@@ -28,12 +28,11 @@ final class PatchDomainStatusAdminService
         if ($domainRow === null) {
             $this->audit->error(
                 action: 'domain.status',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => null,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: null,
+                ),
                 message: 'Domain not found or does not exist.',
             );
             throw ApiException::notFound('Domain not found or does not exist.');
@@ -52,12 +51,11 @@ final class PatchDomainStatusAdminService
         if ($currentActive === $desiredActive) {
             $this->audit->error(
                 action: 'domain.status',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => $domainName
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $domainName,
+                ),
                 message: 'Domain is already in the requested status.',
                 details: [
                     'requested' => $action->value,
@@ -72,12 +70,11 @@ final class PatchDomainStatusAdminService
 
         $this->audit->success(
             action: 'domain.status',
-            target: [
-                'type' => 'domain',
-                'domainUuid' => $domainUuid,
-                'mailDomainId' => $mailDomainId,
-                'name' => $domainName
-            ],
+            target: $this->audit->auditTargetDomain(
+                domainUuid: $domainUuid,
+                mailDomainId: $mailDomainId,
+                name: $domainName
+            ),
             details: [
                 'requested' => $action->value,
                 'before' => ['active' => $currentActive],

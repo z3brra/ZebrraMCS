@@ -10,10 +10,6 @@ use App\Http\Error\ApiException;
 use App\Service\ValidationService;
 
 use App\Audit\AdminMailAuditLogger;
-use phpDocumentor\Reflection\Types\String_;
-use PhpParser\ErrorHandler\Throwing;
-
-use function PHPSTORM_META\map;
 
 final class RenameDomainAdminService
 {
@@ -34,12 +30,11 @@ final class RenameDomainAdminService
         if ($current === null) {
             $this->audit->error(
                 action: 'domain.rename',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => null,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: null
+                ),
                 message: 'Domain not found or does not exist.',
             );
 
@@ -54,12 +49,11 @@ final class RenameDomainAdminService
         if (strcasecmp($oldName, $newName) === 0) {
             $this->audit->success(
                 action: 'domain.rename',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => $oldName,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $oldName,
+                ),
                 details: [
                     'noop' => true,
                     'before' => ['name' => $oldName],
@@ -77,12 +71,11 @@ final class RenameDomainAdminService
         if ($this->mailDomainGateway->existsByName($newName)) {
             $this->audit->error(
                 action: 'domain.rename',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => $oldName,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $oldName,
+                ),
                 message: 'A domain with this name already exists.',
                 details: [
                     'attemptedName' => $newName,
@@ -98,12 +91,11 @@ final class RenameDomainAdminService
         if ($updated === null) {
             $this->audit->error(
                 action: 'domain.rename',
-                target: [
-                    'type' => 'domain.rename',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => $oldName,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $oldName,
+                ),
                 message: 'Domain rename failed unexpectedly',
                 details: [
                     'attemptedName' => $newName,
@@ -116,12 +108,11 @@ final class RenameDomainAdminService
 
         $this->audit->success(
             action: 'domain.rename',
-            target: [
-                'type' => 'domain',
-                'domainUuid' => $domainUuid,
-                'mailDomainId' => $mailDomainId,
-                'name' => (string) $updated['name'],
-            ],
+            target: $this->audit->auditTargetDomain(
+                domainUuid: $domainUuid,
+                mailDomainId: $mailDomainId,
+                name: (string) $updated['name'],
+            ),
             details: [
                 'before' => [
                     'name' => $oldName,

@@ -77,6 +77,19 @@ final class AdminMailAuditLogger
         }
     }
 
+    public function auditTargetDomain(
+        ?string $domainUuid,
+        ?string $mailDomainId,
+        ?string $name
+    ): array {
+        return [
+            'type' => 'domain',
+            'domainUuid' => $domainUuid,
+            'mailDomainId' => $mailDomainId,
+            'name' => $name
+        ];
+    }
+
     public function auditTargetMailUser(
         ?string $userUuid,
         ?int $mailUserId,

@@ -27,12 +27,11 @@ final class DeleteDomainAdminService
         if ($domainRow === null) {
             $this->audit->error(
                 action: 'domain.delete',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => null,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: null,
+                ),
                 message: 'Domain not found or does not exists.',
             );
 
@@ -47,12 +46,11 @@ final class DeleteDomainAdminService
         if ($usersCount > 0 || $aliasesCount > 0) {
             $this->audit->error(
                 action: 'domain.delete',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => $domainName
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $domainName,
+                ),
                 message: 'Domain cannot be deleted because it still has related objects.',
                 details: [
                     'blocking' => [
@@ -73,20 +71,17 @@ final class DeleteDomainAdminService
             );
         }
 
-        var_dump('ici');
         $this->mailDomainGateway->deleteDomainById($mailDomainId);
-        var_dump('ici2');
 
         $link = $this->domainLinkRepository->findOneByUuid($domainUuid);
         if (!$link) {
             $this->audit->error(
                 action: 'domain.delete',
-                target: [
-                    'type' => 'domain',
-                    'domainUuid' => $domainUuid,
-                    'mailDomainId' => $mailDomainId,
-                    'name' => $domainName,
-                ],
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $domainName,
+                ),
                 message: 'Domain link not found or does not exist.'
             );
 
@@ -97,12 +92,11 @@ final class DeleteDomainAdminService
 
         $this->audit->success(
             action: 'domain.delete',
-            target: [
-                'type' => 'domain',
-                'domainUuid' => $domainUuid,
-                'mailDomainId' => $mailDomainId,
-                'name' => $domainName
-            ]
+            target: $this->audit->auditTargetDomain(
+                domainUuid: $domainUuid,
+                mailDomainId: $mailDomainId,
+                name: $domainName,
+            ),
         );
     }
 }

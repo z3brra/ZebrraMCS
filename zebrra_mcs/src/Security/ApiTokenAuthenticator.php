@@ -74,7 +74,7 @@ final class ApiTokenAuthenticator extends AbstractAuthenticator
         $user = New ApiTokenUser(
             tokenUuid: $apiToken->getUuid(),
             permissions: $apiToken->getPermissionStrings(),
-            scopedDomainIds: $apiToken->getScopedDomainIds(),
+            scopedDomainUuids: $apiToken->getScopedDomainUuids(),
         );
 
         return new SelfValidatingPassport(

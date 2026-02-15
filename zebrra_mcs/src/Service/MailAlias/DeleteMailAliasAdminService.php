@@ -4,6 +4,7 @@ namespace App\Service\MailAlias;
 
 use App\Platform\Repository\MailAliasLinkRepository;
 use App\Http\Error\ApiException;
+use App\Audit\AdminMailAuditLogger;
 
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -13,6 +14,7 @@ final class DeleteMailAliasAdminService
         private readonly EntityManagerInterface $entityManager,
         private readonly MailAliasLinkRepository $mailAliasLinkRepository,
         private readonly MailAliasGatewayService $mailAliasGateway,
+        private readonly AdminMailAuditLogger $audit,
     ) {}
 
     public function delete(string $aliasUuid): void
@@ -26,11 +28,34 @@ final class DeleteMailAliasAdminService
 
         $affected = $this->mailAliasGateway->deleteById($mailAliasId);
         if ($affected === 0) {
+            $this->audit->error(
+                action: 'mail_alias.delete',
+                target: $this->audit->auditTargetMailAlias(
+                    aliasUuid: $link->getUuid(),
+                    mailAliasId: $mailAliasId,
+                    sourceEmail: $link->getSourceEmail(),
+                    destinationEmail: $link->getDestinationEmail(),
+                ),
+                message: 'Alias link exists but mailserver alias row was not found.',
+                details: null,
+            );
+
             throw ApiException::notFound('Alias not found or does not exist.');
         }
 
         $this->entityManager->remove($link);
         $this->entityManager->flush();
+
+        $this->audit->success(
+            action: 'mail_alias.delete',
+            target: $this->audit->auditTargetMailAlias(
+                aliasUuid: $link->getUuid(),
+                mailAliasId: $mailAliasId,
+                sourceEmail: $link->getSourceEmail(),
+                destinationEmail: $link->getDestinationEmail(),
+            ),
+            details: null,
+        );
     }
 }
 

@@ -8,7 +8,8 @@ use App\DTO\Domain\{
 };
 use App\Http\Error\ApiException;
 use App\Service\ValidationService;
-use PhpParser\ErrorHandler\Throwing;
+
+use App\Audit\AdminMailAuditLogger;
 
 final class RenameDomainAdminService
 {
@@ -16,6 +17,7 @@ final class RenameDomainAdminService
         private readonly MailDomainLinkResolver $resolver,
         private readonly MailDomainGatewayService $mailDomainGateway,
         private readonly ValidationService $validationService,
+        private readonly AdminMailAuditLogger $audit,
     ) {}
 
     public function rename(string $domainUuid, DomainRenameDTO $renameDTO): DomainReadDTO
@@ -26,12 +28,39 @@ final class RenameDomainAdminService
 
         $current = $this->mailDomainGateway->findById($mailDomainId);
         if ($current === null) {
+            $this->audit->error(
+                action: 'domain.rename',
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: null
+                ),
+                message: 'Domain not found or does not exist.',
+            );
+
             throw ApiException::notFound("Domain not found or does not exist.");
         }
 
-        $newName = trim($renameDTO->name);
+        $oldName = (string) $current['name'];
+        $oldActive = ((int) $current['active']) === 1;
 
-        if (strcasecmp($current['name'], $newName) === 0) {
+        $newName = mb_strtolower(trim((string) $renameDTO->name));
+
+        if (strcasecmp($oldName, $newName) === 0) {
+            $this->audit->success(
+                action: 'domain.rename',
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $oldName,
+                ),
+                details: [
+                    'noop' => true,
+                    'before' => ['name' => $oldName],
+                    'after' => ['name' => $oldName],
+                ],
+            );
+
             return new DomainReadDTO(
                 uuid: $domainUuid,
                 name: $current['name'],
@@ -40,6 +69,19 @@ final class RenameDomainAdminService
         }
 
         if ($this->mailDomainGateway->existsByName($newName)) {
+            $this->audit->error(
+                action: 'domain.rename',
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $oldName,
+                ),
+                message: 'A domain with this name already exists.',
+                details: [
+                    'attemptedName' => $newName,
+                ],
+            );
+
             throw ApiException::conflict('A domain with this name already exists.');
         }
 
@@ -47,13 +89,46 @@ final class RenameDomainAdminService
 
         $updated = $this->mailDomainGateway->findById($mailDomainId);
         if ($updated === null) {
+            $this->audit->error(
+                action: 'domain.rename',
+                target: $this->audit->auditTargetDomain(
+                    domainUuid: $domainUuid,
+                    mailDomainId: $mailDomainId,
+                    name: $oldName,
+                ),
+                message: 'Domain rename failed unexpectedly',
+                details: [
+                    'attemptedName' => $newName,
+                ],
+            );
             throw ApiException::internal("Domain rename failed unexpectedly");
         }
 
+        $newActive = ((int) $updated['active']) === 1;
+
+        $this->audit->success(
+            action: 'domain.rename',
+            target: $this->audit->auditTargetDomain(
+                domainUuid: $domainUuid,
+                mailDomainId: $mailDomainId,
+                name: (string) $updated['name'],
+            ),
+            details: [
+                'before' => [
+                    'name' => $oldName,
+                    'active' => $oldActive,
+                ],
+                'after' => [
+                    'name' => (string) $updated['name'],
+                    'active' => $newActive,
+                ],
+            ],
+        );
+
         return new DomainReadDTO(
             uuid: $domainUuid,
-            name: $updated['name'],
-            active: $updated['active'] === 1
+            name: (string) $updated['name'],
+            active: $newActive
         );
     }
 }

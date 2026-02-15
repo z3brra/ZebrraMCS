@@ -32,7 +32,7 @@ final class MailUserReadDTO
         string $domainUuid,
         bool $active,
         ?string $plainPassword = null,
-        array $aliases,
+        array $aliases = [],
     )
     {
         $this->uuid = $uuid;

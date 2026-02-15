@@ -13,6 +13,8 @@ use App\Service\Domain\MailDomainGatewayService;
 use App\Service\Domain\MailDomainLinkResolver;
 use App\Service\ValidationService;
 
+use App\Audit\AdminMailAuditLogger;
+
 use Doctrine\ORM\EntityManagerInterface;
 
 final class CreateMailUserAdminService
@@ -27,6 +29,8 @@ final class CreateMailUserAdminService
         private readonly MailUserLinkRepository $mailUserLinkRepository,
         private readonly MailUserGatewayService $mailUserGateway,
         private readonly MailPasswordHasherService $passwordHasher,
+
+        private readonly AdminMailAuditLogger $audit,
     ) {}
 
     public function create(MailUserCreateDTO $mailUserCreateDTO): MailUserReadDTO
@@ -61,6 +65,9 @@ final class CreateMailUserAdminService
 
         $existing = $this->mailUserGateway->findByEmail($mailUserCreateDTO->email);
         if ($existing) {
+            $existingMailUserId = (int) $existing['id'];
+            $existingMailDomainId = (int) $existing['domain_id'];
+
             $link = $this->mailUserLinkRepository->findOneByMailUserId((int) $existing['id']);
             if (!$link) {
                 $link = new MailUserLink(
@@ -71,6 +78,22 @@ final class CreateMailUserAdminService
                 $this->entityManager->persist($link);
                 $this->entityManager->flush();
             }
+
+            $this->audit->error(
+                action: 'mail_user.create',
+                target: $this->audit->auditTargetMailUser(
+                    userUuid: $link->getUuid(),
+                    mailUserId: $existingMailUserId,
+                    email: $mailUserCreateDTO->email,
+                    domainUuid: $mailUserCreateDTO->domainUuid,
+                    mailDomainId: $existingMailDomainId,
+                ),
+                message: 'User already exists.',
+                details: [
+                    'active' => ((int) ($existing['active'] ?? 0)) === 1,
+                ],
+            );
+
             throw ApiException::conflict('User already exists.');
         }
 
@@ -91,6 +114,20 @@ final class CreateMailUserAdminService
 
         $this->entityManager->persist($link);
         $this->entityManager->flush();
+
+        $this->audit->success(
+            action: 'mail_user.create',
+            target: $this->audit->auditTargetMailUser(
+                userUuid: $link->getUuid(),
+                mailUserId: $mailUserId,
+                email: $mailUserCreateDTO->email,
+                domainUuid: $mailUserCreateDTO->domainUuid,
+                mailDomainId: $mailDomainId,
+            ),
+            details: [
+                'active' => (bool) $mailUserCreateDTO->active,
+            ],
+        );
 
         return new MailUserReadDTO(
             uuid: $link->getUuid(),

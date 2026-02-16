@@ -47,6 +47,13 @@ final class AccessControlService
         $this->getActor();
     }
 
+    public function denyUnlessToken(): void
+    {
+        if (!$this->isToken()) {
+            throw ApiException::forbidden('Token access required.');
+        }
+    }
+
     public function denyUnlessAdmin(): void
     {
         if (!$this->isAdmin()) {

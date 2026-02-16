@@ -37,7 +37,7 @@ class ApiTokenScope
         return $this;
     }
 
-    public function getDomainUuid(): int
+    public function getDomainUuid(): string
     {
         return $this->domainUuid;
     }

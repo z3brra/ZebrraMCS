@@ -10,19 +10,19 @@ final class ApiTokenScopeService
     /**
      * @param list<int> $allowedDomainIds
      */
-    public function denyUnlessDomainAllowed(ApiTokenUser $tokenUser, int $targetDomainId): void
+    public function denyUnlessDomainAllowed(ApiTokenUser $tokenUser, string $targetDomainUuid): void
     {
-        $allowedDomainIds = $tokenUser->getScopedDomainIds();
+        $allowedDomainIds = $tokenUser->getScopedDomainUuids();
 
         if ($allowedDomainIds === []) {
             return;
         }
 
-        if (!in_array($targetDomainId, $allowedDomainIds, true)) {
+        if (!in_array($targetDomainUuid, $allowedDomainIds, true)) {
             throw ApiException::scopeViolation(
                 message: 'Scope violation',
                 details: [
-                    'targetDomainId' => $targetDomainId,
+                    'targetDomainUuid' => $targetDomainUuid,
                     'allowedDomainIds' => $allowedDomainIds,
                 ]
             );

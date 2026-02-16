@@ -71,10 +71,10 @@ final class ApiTokenAuthenticator extends AbstractAuthenticator
         $apiToken->touchLastUsedAt();
         $this->entityManager->flush();
 
-        $user = New ApiTokenUser(
+        $user = new ApiTokenUser(
             tokenUuid: $apiToken->getUuid(),
             permissions: $apiToken->getPermissionStrings(),
-            scopedDomainIds: $apiToken->getScopedDomainIds(),
+            scopedDomainUuids: $apiToken->getScopedDomainUuids(),
         );
 
         return new SelfValidatingPassport(

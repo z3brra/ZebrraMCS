@@ -60,7 +60,7 @@ final class AuditContextProvider
                 'tokenUuid' => $user->getUserIdentifier(),
                 'roles' => $user->getRoles(),
                 'permissionsCount' => count($user->getPermissions()),
-                'scopesCount' => count($user->getScopedDomainIds()),
+                'scopesCount' => count($user->getScopedDomainUuids()),
             ];
         }
 

@@ -264,6 +264,7 @@ final class ApiToken
         $out = [];
         foreach ($this->scopes as $scope) {
             $out[] = $scope->getDomainUuid();
+            
         }
         $out = array_values(array_unique($out));
         sort($out);

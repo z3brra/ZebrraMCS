@@ -47,6 +47,13 @@ final class AccessControlService
         $this->getActor();
     }
 
+    public function denyUnlessToken(): void
+    {
+        if (!$this->isToken()) {
+            throw ApiException::forbidden('Token access required.');
+        }
+    }
+
     public function denyUnlessAdmin(): void
     {
         if (!$this->isAdmin()) {
@@ -83,7 +90,7 @@ final class AccessControlService
         throw ApiException::authInvalid('Invalid authentication.');
     }
 
-    public function denyUnlessDomainScopeAllowed(int $domainId): void
+    public function denyUnlessDomainScopeAllowed(string $domainUuid): void
     {
         $actor = $this->getActor();
 
@@ -92,7 +99,7 @@ final class AccessControlService
         }
 
         if ($actor instanceof ApiTokenUser) {
-            $this->scopeService->denyUnlessDomainAllowed($actor, $domainId);
+            $this->scopeService->denyUnlessDomainAllowed($actor, $domainUuid);
             return;
         }
 

@@ -2,11 +2,13 @@
 
 namespace App\Controller;
 
+use App\DTO\MailUser\MailUserCreateDTO;
+use App\Http\Error\ApiException;
 use App\Platform\Enum\Permission;
 use App\Service\MailUser\Token\ReadMailUserTokenService;
 
 use App\Service\Access\AccessControlService;
-
+use App\Service\MailUser\Token\CreateMailUserTokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
 use Symfony\Component\Routing\Attribute\Route;
@@ -19,6 +21,37 @@ final class TokenMailUserController extends AbstractController
         private readonly AccessControlService $accessControl,
         private readonly SerializerInterface $serializer,
     ) {}
+
+    #[Route('', name: 'create', methods: 'POST')]
+    public function create(
+        Request $request,
+        CreateMailUserTokenService $createMailUserService,
+    ): JsonResponse {
+        try {
+            /** @var MailUserCreateDTO $createUserDTO */
+            $createUserDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailUserCreateDTO::class,
+                format: 'json',
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $readUserDTO = $createMailUserService->create($createUserDTO);
+
+        $responseData = $this->serializer->serialize(
+            data: ['data' => $readUserDTO],
+            format: 'json',
+            context: ['groups' => ['user:read', 'user:create']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_CREATED,
+            json: true
+        );
+    }
 
     #[Route('/{uuid}', name: 'read', methods: 'GET')]
     public function read(

@@ -3,12 +3,14 @@
 namespace App\Controller;
 
 use App\DTO\MailUser\MailUserCreateDTO;
+use App\DTO\MailUser\MailUserPasswordChangeDTO;
 use App\DTO\MailUser\MailUserStatusDTO;
 use App\Http\Error\ApiException;
 use App\Platform\Enum\Permission;
 use App\Service\MailUser\Token\ReadMailUserTokenService;
 
 use App\Service\Access\AccessControlService;
+use App\Service\MailUser\Token\ChangeMailUserPasswordTokenService;
 use App\Service\MailUser\Token\CreateMailUserTokenService;
 use App\Service\MailUser\Token\UpdateMailUserStatusTokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -99,6 +101,31 @@ final class TokenMailUserController extends AbstractController
         }
 
         $updateStatusService->update($uuid, $statusUserDTO);
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{uuid}/password', name: 'change_password', methods: 'PATCH')]
+    public function patchPassword(
+        string $uuid,
+        Request $request,
+        ChangeMailUserPasswordTokenService $changePasswordService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessToken();
+        $this->accessControl->denyUnlessPermission(Permission::USERS_UPDATE_PASSWORD);
+
+        try {
+            /** @var MailUserPasswordChangeDTO $changePasswordDTO */
+            $changePasswordDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailUserPasswordChangeDTO::class,
+                format: 'json',
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format');
+        }
+
+        $changePasswordService->change($uuid, $changePasswordDTO);
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }

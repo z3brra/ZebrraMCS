@@ -8,7 +8,7 @@ final class ApiTokenUser implements UserInterface
 {
     /**
      * @param list<string> $permissions
-     * @param list<int> $scopedDomainIds
+     * @param list<string> $scopedDomainIds
      */
     public function __construct(
         private readonly string $tokenUuid,
@@ -37,7 +37,7 @@ final class ApiTokenUser implements UserInterface
         return $this->permissions;
     }
 
-    /** @return list<int> */
+    /** @return list<string> */
     public function getScopedDomainUuids(): array
     {
         return $this->scopedDomainUuids;

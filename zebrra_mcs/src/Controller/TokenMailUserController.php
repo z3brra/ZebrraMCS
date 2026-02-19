@@ -3,12 +3,14 @@
 namespace App\Controller;
 
 use App\DTO\MailUser\MailUserCreateDTO;
+use App\DTO\MailUser\MailUserStatusDTO;
 use App\Http\Error\ApiException;
 use App\Platform\Enum\Permission;
 use App\Service\MailUser\Token\ReadMailUserTokenService;
 
 use App\Service\Access\AccessControlService;
 use App\Service\MailUser\Token\CreateMailUserTokenService;
+use App\Service\MailUser\Token\UpdateMailUserStatusTokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
 use Symfony\Component\Routing\Attribute\Route;
@@ -27,6 +29,9 @@ final class TokenMailUserController extends AbstractController
         Request $request,
         CreateMailUserTokenService $createMailUserService,
     ): JsonResponse {
+        $this->accessControl->denyUnlessToken();
+        $this->accessControl->denyUnlessPermission(Permission::USERS_CREATE);
+
         try {
             /** @var MailUserCreateDTO $createUserDTO */
             $createUserDTO = $this->serializer->deserialize(
@@ -74,6 +79,28 @@ final class TokenMailUserController extends AbstractController
             status: JsonResponse::HTTP_OK,
             json: true
         );
+    }
+
+    #[Route('/{uuid}/status', name: 'status', methods: 'PATCH')]
+    public function patchStatus(
+        string $uuid,
+        Request $request,
+        UpdateMailUserStatusTokenService $updateStatusService,
+    ): JsonResponse {
+        try {
+            /** @var MailUserStatusDTO $statusUserDTO */
+            $statusUserDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: MailUserStatusDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $updateStatusService->update($uuid, $statusUserDTO);
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }
 

@@ -6,13 +6,13 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 final class MailAliasReadDTO
 {
-    #[Groups(['user:read'])]
+    #[Groups(['alias:read', 'user:read'])]
     public string $uuid;
 
-    #[Groups(['user:read'])]
+    #[Groups(['alias:read', 'user:read'])]
     public string $sourceEmail;
 
-    #[Groups(['user:read'])]
+    #[Groups(['alias:read', 'user:read'])]
     public string $destinationEmail;
 
     public function __construct(

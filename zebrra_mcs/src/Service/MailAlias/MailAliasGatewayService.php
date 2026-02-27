@@ -54,6 +54,15 @@ final class MailAliasGatewayService
         );
     }
 
+    public function findById(int $id): ?array
+    {
+        $row = $this->mailConnection->fetchAssociative(
+            'SELECT id, source, destination FROM aliases WHERE id = :id LIMIT 1',
+            ['id' => $id]
+        );
+        return $row ?: null;
+    }
+
     public function findByDestinationEmail(string $destinationEmail): array
     {
         $destinationEmail = mb_strtolower(trim($destinationEmail));

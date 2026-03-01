@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
-// use App\Http\Error\ApiException;
+use App\DTO\MailAlias\MailAliasCreateDTO;
+use App\Http\Error\ApiException;
 use App\Platform\Enum\Permission;
 
 use App\Service\Access\AccessControlService;
+use App\Service\MailAlias\Token\CreateMailAliasTokenService;
 use App\Service\MailAlias\Token\ReadMailAliasTokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
@@ -39,6 +41,37 @@ final class TokenMailAliasController extends AbstractController
         return new JsonResponse(
             data: $responseData,
             status: JsonResponse::HTTP_OK,
+            json: true
+        );
+    }
+
+    #[Route('', name: 'create', methods: 'POST')]
+    public function create(
+        Request $request,
+        CreateMailAliasTokenService $createAliasService
+    ): JsonResponse {
+        try {
+            /** @var MailAliasCreateDTO $createAliasDTO */
+            $createAliasDTO = $this->serializer->deserialize(
+                data: $request->getcontent(),
+                type: MailAliasCreateDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $readAliasDTO = $createAliasService->create($createAliasDTO);
+
+        $responseData = $this->serializer->serialize(
+            data: $readAliasDTO,
+            format: 'json',
+            context: ['groups' => ['alias:create']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_CREATED,
             json: true
         );
     }

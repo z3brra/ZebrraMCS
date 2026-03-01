@@ -8,6 +8,7 @@ use App\Platform\Enum\Permission;
 
 use App\Service\Access\AccessControlService;
 use App\Service\MailAlias\Token\CreateMailAliasTokenService;
+use App\Service\MailAlias\Token\DeleteMailAliasTokenService;
 use App\Service\MailAlias\Token\ReadMailAliasTokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{Request, JsonResponse};
@@ -50,6 +51,9 @@ final class TokenMailAliasController extends AbstractController
         Request $request,
         CreateMailAliasTokenService $createAliasService
     ): JsonResponse {
+        $this->accessControl->denyUnlessToken();
+        $this->accessControl->denyUnlessPermission(Permission::ALIASES_CREATE);
+
         try {
             /** @var MailAliasCreateDTO $createAliasDTO */
             $createAliasDTO = $this->serializer->deserialize(
@@ -74,6 +78,19 @@ final class TokenMailAliasController extends AbstractController
             status: JsonResponse::HTTP_CREATED,
             json: true
         );
+    }
+
+    #[Route('/{uuid}', name: 'delete', methods: 'DELETE')]
+    public function delete(
+        string $uuid,
+        DeleteMailAliasTokenService $deleteAliasService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessToken();
+        $this->accessControl->denyUnlessPermission(Permission::ALIASES_DELETE);
+
+        $deleteAliasService->delete($uuid);
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }
 

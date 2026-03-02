@@ -12,6 +12,7 @@ use App\Http\Error\ApiException;
 use App\Service\SuperAdmin\PatchAdminUserStatusService;
 use App\Service\SuperAdmin\ReadAdminUserService;
 use App\Service\SuperAdmin\ResetAdminUserPasswordService;
+use App\Service\SuperAdmin\SoftDeleteAdminUserService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{JsonResponse, Request};
 use Symfony\Component\Routing\Attribute\Route;
@@ -64,6 +65,8 @@ final class SuperAdminController extends AbstractController
         Request $request,
         PatchAdminUserStatusService $patchAdminStatusService,
     ): JsonResponse {
+        $this->accessControl->denyUnlessSuperAdmin();
+
         try {
             /**
              * @var AdminStatusPatchDTO $patchAdminStatusDTO
@@ -87,6 +90,8 @@ final class SuperAdminController extends AbstractController
         string $uuid,
         ResetAdminUserPasswordService $resetAdminPasswordService
     ): JsonResponse {
+        $this->accessControl->denyUnlessSuperAdmin();
+
         $readAdminDTO = $resetAdminPasswordService->reset($uuid);
         
         $responseData = $this->serializer->serialize(
@@ -122,6 +127,18 @@ final class SuperAdminController extends AbstractController
             status: JsonResponse::HTTP_OK,
             json: true
         );
+    }
+
+    #[Route('/{uuid}', name: 'soft-delete', methods: 'DELETE')]
+    public function delete(
+        string $uuid,
+        SoftDeleteAdminUserService $softDeleteAdminService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessSuperAdmin();
+
+        $softDeleteAdminService->delete($uuid);
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }
 

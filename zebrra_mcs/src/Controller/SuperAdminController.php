@@ -3,13 +3,15 @@
 namespace App\Controller;
 
 use App\DTO\Admin\AdminCreateDTO;
-
+use App\DTO\Admin\AdminStatusPatchDTO;
 use App\Service\SuperAdmin\CreateAdminUserService;
 
 use App\Service\Access\AccessControlService;
 
 use App\Http\Error\ApiException;
+use App\Service\SuperAdmin\PatchAdminUserStatusService;
 use App\Service\SuperAdmin\ReadAdminUserService;
+use App\Service\SuperAdmin\ResetAdminUserPasswordService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{JsonResponse, Request};
 use Symfony\Component\Routing\Attribute\Route;
@@ -52,6 +54,50 @@ final class SuperAdminController extends AbstractController
         return new JsonResponse(
             data: $responseData,
             status: JsonResponse::HTTP_CREATED,
+            json: true
+        );
+    }
+
+    #[Route('/{uuid}/status', name: 'status', methods: 'PATCH')]
+    public function patchStatus(
+        string $uuid,
+        Request $request,
+        PatchAdminUserStatusService $patchAdminStatusService,
+    ): JsonResponse {
+        try {
+            /**
+             * @var AdminStatusPatchDTO $patchAdminStatusDTO
+             */
+            $patchAdminStatusDTO = $this->serializer->deserialize(
+                data: $request->getContent(),
+                type: AdminStatusPatchDTO::class,
+                format: 'json'
+            );
+        } catch (\Throwable) {
+            throw ApiException::badRequest('Invalid JSON format.');
+        }
+
+        $patchAdminStatusService->patch($uuid, $patchAdminStatusDTO);
+
+        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{uuid}/reset-password', name: 'reset-password', methods: 'POST')]
+    public function resetPassword(
+        string $uuid,
+        ResetAdminUserPasswordService $resetAdminPasswordService
+    ): JsonResponse {
+        $readAdminDTO = $resetAdminPasswordService->reset($uuid);
+        
+        $responseData = $this->serializer->serialize(
+            data: ['data' => $readAdminDTO],
+            format: 'json',
+            context: ['groups' => ['admin:secret']],
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
             json: true
         );
     }

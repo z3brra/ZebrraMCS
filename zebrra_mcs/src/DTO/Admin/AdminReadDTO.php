@@ -8,25 +8,25 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 final class AdminReadDTO
 {
-    #[Groups(['admin:me'])]
+    #[Groups(['admin:me', 'admin:read'])]
     public string $uuid;
 
-    #[Groups(['admin:me'])]
+    #[Groups(['admin:me', 'admin:read'])]
     public string $email;
 
     /**
      * @var list<string>
      */
-    #[Groups(['admin:me'])]
+    #[Groups(['admin:me', 'admin:read'])]
     public array $roles; 
 
-    #[Groups(['admin:me'])]
+    #[Groups(['admin:me', 'admin:read'])]
     public bool $active;
 
-    #[Groups(['admin:me'])]
+    #[Groups(['admin:me', 'admin:read'])]
     public DateTimeImmutable $createdAt;
 
-    #[Groups(['admin:me'])]
+    #[Groups(['admin:me', 'admin:read'])]
     public ?DateTimeImmutable $updatedAt;
 
     public function __construct(

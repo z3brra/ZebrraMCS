@@ -19,6 +19,16 @@ class AdminUserRepository extends ServiceEntityRepository implements PasswordUpg
         parent::__construct($registry, AdminUser::class);
     }
 
+    public function findOneByUuid(string $uuid): ?AdminUser
+    {
+        return $this->findOneBy(['uuid' => $uuid]);
+    }
+
+    public function findOneByEmail(string $email): ?AdminUser
+    {
+        return $this->findOneBy(['email' => $email]);
+    }
+
     /**
      * Used to upgrade (rehash) the user's password automatically over time.
      */

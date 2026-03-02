@@ -9,7 +9,7 @@ use App\Service\SuperAdmin\CreateAdminUserService;
 use App\Service\Access\AccessControlService;
 
 use App\Http\Error\ApiException;
-
+use App\Service\SuperAdmin\ReadAdminUserService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\{JsonResponse, Request};
 use Symfony\Component\Routing\Attribute\Route;
@@ -52,6 +52,28 @@ final class SuperAdminController extends AbstractController
         return new JsonResponse(
             data: $responseData,
             status: JsonResponse::HTTP_CREATED,
+            json: true
+        );
+    }
+
+    #[Route('/{uuid}', name: 'read', methods: 'GET')]
+    public function read(
+        string $uuid,
+        ReadAdminUserService $readAdminService,
+    ): JsonResponse {
+        $this->accessControl->denyUnlessSuperAdmin();
+
+        $readAdminDTO = $readAdminService->read($uuid);
+
+        $responseData = $this->serializer->serialize(
+            data: ['data' => $readAdminDTO],
+            format: 'json',
+            context: ['groups' => ['admin:read']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
             json: true
         );
     }

@@ -6,22 +6,22 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 final class PaginationMetaDTO
 {
-    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list'])]
+    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list', 'admin:list'])]
     public int $page;
 
-    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list'])]
+    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list', 'admin:list'])]
     public int $perPage;
 
-    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list'])]
+    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list', 'admin:list'])]
     public int $total;
 
-    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list'])]
+    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list', 'admin:list'])]
     public int $totalPages;
 
-    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list'])]
+    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list', 'admin:list'])]
     public ?string $sort;
 
-    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list'])]
+    #[Groups(['token:list', 'domain:list', 'user:list', 'alias:list', 'admin:list'])]
     public ?string $order;
 
     public function __construct(

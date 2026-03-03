@@ -241,6 +241,34 @@ final class MailUserGatewayService
             ['id' => ParameterType::INTEGER]
         );
     }
+
+    /**
+     * @param list<string> $emails lowercase
+     * @return array<string, bool> map emails => exists
+     */
+    public function mapExistingByEmails(array $emails): array
+    {
+        $out = [];
+        foreach ($emails as $email) {
+            $out[$email] = false;
+        }
+
+        if ($emails === []) {
+            return $out;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($emails), '?'));
+
+        $sql = "SELECT email FROM users WHERE email IN ($placeholders)";
+        $rows = $this->mailConnection->fetchAllAssociative($sql, $emails);
+
+        foreach ($rows as $row) {
+            $email = mb_strtolower((string) $row['email']);
+            $out[$email] = true;
+        }
+
+        return $out;
+    }
 }
 
 ?>

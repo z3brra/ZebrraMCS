@@ -2,8 +2,10 @@
 
 namespace App\Platform\Repository;
 
+use App\DTO\Admin\AdminSearchQueryDTO;
 use App\Platform\Entity\AdminUser;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -41,6 +43,84 @@ class AdminUserRepository extends ServiceEntityRepository implements PasswordUpg
         $user->setPassword($newHashedPassword);
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
+    }
+
+    public function listPaginated(int $page, int $limit): array
+    {
+        $page = max(1, $page);
+        $limit = max(1, $limit);
+
+        $queryBuilder = $this->createQueryBuilder('admin')
+            ->orderBy('admin.createdAt', 'DESC')
+            ->addOrderBy('admin.email', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+        
+        $paginator = new Paginator($queryBuilder, true);
+
+        $data = iterator_to_array($paginator->getIterator(), false);
+        $total = count($paginator);
+
+        return [
+            'data' => $data,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $limit,
+        ];
+    }
+
+    public function paginateByQuery(AdminSearchQueryDTO $query): array
+    {
+        $queryBuilder = $this->createQueryBuilder('admin');
+
+        if ($query->q !== null && trim($query->q) !== '') {
+            $needle = '%'.mb_strtolower(trim($query->q)).'%';
+            $queryBuilder->andWhere('LOWER(admin.email) LIKE :needle OR LOWER(admin.uuid) LIKE :needle')
+                ->setParameter('needle', $needle);
+        }
+
+        if ($query->active !== null) {
+            $queryBuilder->andWhere('admin.active = :active')
+                ->setParameter('active', $query->active);
+        }
+
+        if ($query->deleted !== null) {
+            $queryBuilder->andWhere($query->deleted ? 'admin.deletedAt IS NOT NULL' : 'admin.deletedAt IS NULL');
+        }
+
+        $sortMap = [
+            'email' => 'admin.email',
+            'createdAt' => 'admin.createdAt',
+            'active' => 'admin.active',
+        ];
+
+        $sortField = $sortMap[$query->sort ?? 'createdAt'] ?? 'admin.createdAt';
+        $orderDir = strtolower($query->order) === 'asc' ? 'ASC' : 'DESC';
+
+        $queryBuilder->orderBy($sortField, $orderDir);
+
+        if ($sortField !== 'admin.email') {
+            $queryBuilder->addOrderBy('admin.email', 'ASC');
+        }
+
+        $page = max(1, $query->page);
+        $limit = max(1, $query->limit);
+
+        $queryBuilder->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        $paginator = new Paginator($queryBuilder, true);
+        $result = iterator_to_array($paginator->getIterator(), false);
+        $total = count($paginator);
+
+        return [
+            'data' => $result,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $limit,
+            'sort' => $sortField,
+            'order' => $orderDir,
+        ];
     }
 
 //    /**

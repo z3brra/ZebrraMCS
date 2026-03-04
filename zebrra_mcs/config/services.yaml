@@ -66,6 +66,8 @@ services:
         tags:
             - { name: kernel.event_subscriber }
 
+    
+
     ### Token hash
     App\Security\ApiTokenHasher:
         arguments:
@@ -89,5 +91,19 @@ services:
         arguments:
             $mailConnection: '@doctrine.dbal.mail_connection'
 
+    # Refresh Token
+    App\Service\RefreshTokenHasher: ~
+
+    App\Service\Auth\RefreshTokenConfig:
+        arguments:
+            $cookieName: '%env(string:REFRESH_COOKIE_NAME)%'
+            $ttlSeconds: '%env(int:REFRESH_TOKEN_TTL)%'
+            $path: '%env(string:REFRESH_COOKIE_PATH)%'
+            $secure: '%env(bool:REFRESH_COOKIE_SECURE)%'
+            $httpOnly: '%env(bool:REFRESH_COOKIE_HTTPONLY)%'
+            $sameSite:  '%env(string:REFRESH_COOKIE_SAMESITE)%'
+
+    App\Service\Auth\AdminRefreshTokenService: ~
+    App\Service\Auth\RefreshTokenCookieService: ~
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

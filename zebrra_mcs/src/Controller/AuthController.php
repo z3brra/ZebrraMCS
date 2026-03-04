@@ -2,9 +2,17 @@
 
 namespace App\Controller;
 
-use App\Service\Auth\AdminMeService;
+use App\Service\Auth\{
+    AdminMeService,
+    AdminRefreshTokenService,
+    RefreshTokenCookieService,
+};
+use App\Http\Error\ApiException;
+
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request};
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 
@@ -50,6 +58,76 @@ final class AuthController extends AbstractController
                 status: JsonResponse::HTTP_FORBIDDEN
             );
         }
+    }
+
+    #[Route('/logout', name: 'logout', methods: 'DELETE')]
+    public function logout(
+        Request $request,
+        AdminRefreshTokenService $refreshTokenService,
+        RefreshTokenCookieService $cookieService,
+    ): JsonResponse {
+        $refreshToken = (string) $request->cookies->get('refresh_token', '');
+
+        if ($refreshToken === '') {
+            $refreshToken = (string) $request->headers->get('X-REFRESH-TOKEN', '');
+        }
+
+        if (trim($refreshToken) !== '') {
+            $refreshTokenService->revoke($refreshToken);
+        }
+
+        $response = new JsonResponse(
+            data: [
+                'data' => [
+                    'status' => 'ok',
+                ]
+            ],
+            status: JsonResponse::HTTP_OK,
+        );
+
+        $response->headers->setCookie($cookieService->clearCookie());
+
+        return $response;
+    }
+
+    #[Route('/refresh', name: 'refresh', methods: 'POST')]
+    public function refresh(
+        Request $request,
+        AdminRefreshTokenService $refreshTokenService,
+        RefreshTokenCookieService $cookieService,
+        JWTTokenManagerInterface $jwtManager,
+    ): JsonResponse {
+        $refreshToken = (string) $request->cookies->get('refresh_token', '');
+
+        if ($refreshToken === '') {
+            $refreshToken = (string) $request->headers->get('X-REFRESH-TOKEN', '');
+        }
+
+        if (trim($refreshToken) === '') {
+            throw ApiException::authRequired('Refresh token required.');
+        }
+
+        $rotated = $refreshTokenService->rotateWithAdmin($refreshToken);
+
+        $admin = $rotated['admin'];
+        $newRefresh = $rotated['refreshToken'];
+
+        $jwt = $jwtManager->create($admin);
+
+        $response = new JsonResponse(
+            data: [
+                'data' => [
+                    'token' => $jwt,
+                    'tokenType' => 'Bearer',
+                    'expiresIn' => 600,
+                ],
+            ],
+            status: JsonResponse::HTTP_OK
+        );
+
+        $response->headers->setCookie($cookieService->createCookie($newRefresh));
+
+        return $response;
     }
 }
 

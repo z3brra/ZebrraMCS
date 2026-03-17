@@ -70,6 +70,8 @@ final class CreateAdminUserService
             email: $admin->getEmail(),
             roles: $admin->getRoles(),
             active: $admin->isActive(),
+            isDeleted: $admin->isDeleted(),
+            hasMailBox: $createAdminDTO->createMailUser,
             createdAt: $admin->getCreatedAt(),
             updatedAt: $admin->getUpdatedAt()
         );

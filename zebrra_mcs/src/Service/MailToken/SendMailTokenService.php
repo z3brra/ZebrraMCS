@@ -19,6 +19,8 @@ use App\Service\Domain\{
 use App\Service\ValidationService;
 use App\Service\Access\AccessControlService;
 
+use App\Audit\TokenMailAuditLogger;
+
 use App\Http\Error\ApiException;
 
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
@@ -35,6 +37,7 @@ final class SendMailTokenService
         private readonly MailDomainLinkResolver $mailDomainResolver,
         private readonly MailerInterface $mailer,
         private readonly SendMailConfig $sendMailConfig,
+        private readonly TokenMailAuditLogger $sendmailAudit,
     ) {}
 
     public function send(MailSendRequestDTO $mailSendDTO): MailSendResponseDTO
@@ -124,6 +127,18 @@ final class SendMailTokenService
         try {
             $this->mailer->send($email);
         } catch (TransportExceptionInterface $e) {
+            $this->sendmailAudit->error(
+                action: 'mail.send',
+                target: $this->sendmailAudit->targetSendMail(
+                    fromEmail: $fromEmail,
+                    domainUuid: $domainUuid,
+                ),
+                message: 'Mail transport failed.',
+                details: $this->buildAuditDetails($mailSendDTO, null, [
+                    'transportError' => $e->getMessage(),
+                ]),
+            );
+
             throw ApiException::internal(
                 message: 'Mail transport failed.',
                 details: [
@@ -133,9 +148,20 @@ final class SendMailTokenService
             );
         }
 
+        $messageId = $email->getHeaders()->get('Message-ID')?->getBodyAsString();
+
+        $this->sendmailAudit->success(
+            action: 'mail.send',
+            target: $this->sendmailAudit->targetSendMail(
+                fromEmail: $fromEmail,
+                domainUuid: $domainUuid,
+            ),
+            details: $this->buildAuditDetails($mailSendDTO, $messageId),
+        );
+
         return new MailSendResponseDTO(
             status: 'sent',
-            messageId: $email->getHeaders()->get('Message-ID')?->getBodyAsString()
+            messageId: $messageId
         );
     }
 
@@ -322,6 +348,37 @@ final class SendMailTokenService
                 ],
             );
         }
+    }
+
+    /**
+     * @param array<string, mixed>|null $extra
+     * @return array<string, mixed>
+     */
+    private function buildAuditDetails(
+        MailSendRequestDTO $mailSendDTO,
+        ?string $messageId,
+        ?array $extra = null
+    ): array {
+        $details = [
+            'subject' => $mailSendDTO->subject,
+            'toCount' => count($mailSendDTO->to),
+            'ccCount' => count($mailSendDTO->cc),
+            'bccCount' => count($mailSendDTO->bcc),
+            'replyToCount' => count($mailSendDTO->replyTo),
+            'attachmentsCount' => count($mailSendDTO->attachments),
+            'hasTextBody' => $mailSendDTO->textBody !== null && trim($mailSendDTO->textBody) !== '',
+            'hasHtmlBody' => $mailSendDTO->htmlBody !== null && trim($mailSendDTO->htmlBody) !== '',
+            'returnPath' => $mailSendDTO->returnPath,
+            'messageId' => $messageId,
+        ];
+
+        if ($extra !== null) {
+            foreach ($extra as $key => $value) {
+                $details[$key] = $value;
+            }
+        }
+
+        return $details;
     }
 }
 

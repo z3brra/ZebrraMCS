@@ -7,6 +7,8 @@ use App\DTO\Mail\{
     MailSendRequestDTO,
     MailSendResponseDTO,
     MailAttachmentDTO,
+    MailHeaderDTO,
+    MailInlineAttachmentDTO,
 };
 
 use App\Platform\Enum\Permission;
@@ -122,7 +124,9 @@ final class SendMailTokenService
             $email->html($mailSendDTO->htmlBody);
         }
 
+        $this->applyCustomHeaders($email, $mailSendDTO->headers);
         $this->attachFiles($email, $mailSendDTO->attachments);
+        $this->attachInlineFiles($email, $mailSendDTO->inlineAttachments);
 
         try {
             $this->mailer->send($email);
@@ -163,6 +167,71 @@ final class SendMailTokenService
             status: 'sent',
             messageId: $messageId
         );
+    }
+
+    /**
+     * @param list<MailHeaderDTO|array<string, mixed>> $headers
+     */
+    private function applyCustomHeaders(Email $email, array $headers): void
+    {
+        $blockedHeaders = [
+            'from',
+            'to',
+            'cc',
+            'bcc',
+            'reply-to',
+            'return-path',
+            'subject',
+            'message-id',
+            'content-type',
+            'mime-version',
+            'date'
+        ];
+
+        foreach ($headers as $header) {
+            $name = '';
+            $value = '';
+
+            if ($header instanceof MailHeaderDTO) {
+                $name = trim($header->name);
+                $value = trim($header->value);
+            } else {
+                $name = isset($header['name']) ? trim((string) $header['name']) : '';
+                $value = isset($header['value']) ? trim((string) $header['value']) : '';
+            }
+
+            if ($name === '' || $value === '') {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'headers',
+                                'message' => 'Custom header name and value are required.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            if (in_array(mb_strtolower($name), $blockedHeaders, true)) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'headers',
+                                'message' => sprintf('Header "%s" is not allowed.', $name),
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $email->getHeaders()->addTextHeader($name, $value);
+        }
     }
 
     private function attachFiles(Email $email, array $attachments): void
@@ -273,6 +342,104 @@ final class SendMailTokenService
     }
 
     /**
+     * @param list<MailInlineAttachmentDTO|array<string, mixed>> $inlineAttachments
+     */
+    private function attachInlineFiles(Email $email, array $inlineAttachments): void
+    {
+        $totalBytes = 0;
+        $maxBytesPerAttachment = 5 * 1024 * 1024;
+        $maxBytesTotal = 20 * 1024 * 1024;
+
+        foreach ($inlineAttachments as $attachment) {
+            $filename = '';
+            $contentType = null;
+            $contentBase64 = '';
+            $contentId = '';
+
+            if ($attachment instanceof MailInlineAttachmentDTO) {
+                $filename = trim($attachment->filename);
+                $contentType = $attachment->contentType !== null ? trim($attachment->contentType) : null;
+                $contentBase64 = trim($attachment->contentBase64);
+                $contentId = trim($attachment->contentId);
+            } else {
+                $filename = isset($attachment['filename']) ? trim((string) $attachment['filename']) : '';
+                $contentType = isset($attachment['contentType']) ? trim((string) $attachment['contentType']) : null;
+                $contentBase64 = isset($attachment['contentBase64']) ? trim((string) $attachment['contentBase64']) : '';
+                $contentId = isset($attachment['contentId']) ? trim((string) $attachment['contentId']) : '';
+            }
+
+            if ($filename === '' || $contentBase64 === '' || $contentId === '') {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'inlineAttachments',
+                                'message' => 'Inline attachment filename, contentBase64 and contentId are required.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $decoded = base64_decode($contentBase64, true);
+            if ($decoded === false) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'inlineAttachments.contentBase64',
+                                'message' => 'Inline attachment contentBase64 must be valid base64.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $size = strlen($decoded);
+            if ($size > $maxBytesPerAttachment) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'inlineAttachments',
+                                'message' => 'Inline attachment exceeds maximum size of 5 MB.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $totalBytes += $size;
+            if ($totalBytes > $maxBytesTotal) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'inlineAttachments',
+                                'message' => 'Total inline attachment size exceeds maximum of 20 MB.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            if ($contentType !== null && $contentType !== '') {
+                $email->embed($decoded, $contentId, $contentType);
+            } else {
+                $email->embed($decoded, $contentId);
+            }
+        }
+    }
+
+    /**
      * @param MailAddressDTO|array<string, mixed> $addressData
      */
     private function toAddress(MailAddressDTO|array $addressData): Address
@@ -366,6 +533,8 @@ final class SendMailTokenService
             'bccCount' => count($mailSendDTO->bcc),
             'replyToCount' => count($mailSendDTO->replyTo),
             'attachmentsCount' => count($mailSendDTO->attachments),
+            'inlineAttachmentsCount' => count($mailSendDTO->inlineAttachments),
+            'headersCount' => count($mailSendDTO->headers),
             'hasTextBody' => $mailSendDTO->textBody !== null && trim($mailSendDTO->textBody) !== '',
             'hasHtmlBody' => $mailSendDTO->htmlBody !== null && trim($mailSendDTO->htmlBody) !== '',
             'returnPath' => $mailSendDTO->returnPath,

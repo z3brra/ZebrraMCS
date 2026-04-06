@@ -3,6 +3,9 @@
 namespace App\DTO\Mail;
 
 use App\DTO\Mail\MailAttachmentDTO;
+use App\DTO\Mail\MailInlineAttachmentDTO;
+use App\DTO\Mail\MailHeaderDTO;
+
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class MailSendRequestDTO
@@ -43,6 +46,21 @@ final class MailSendRequestDTO
     #[Assert\Valid(groups: ['mail:send'])]
     #[Assert\Count(max: 10, groups: ['mail:send'])]
     public array $attachments = [];
+
+    /**
+     * @var list<MailInlineAttachmentDTO>
+     */
+    #[Assert\Valid(groups: ['mail:send'])]
+    #[Assert\Count(max: 10, groups: ['mail:send'])]
+    public array $inlineAttachments = [];
+
+    /**
+     * @var list<MailHeaderDTO>
+     */
+    #[Assert\Valid(groups: ['mail:send'])]
+    #[Assert\Count(max: 20, groups: ['mail:send'])]
+    public array $headers = [];
+
 }
 
 ?>

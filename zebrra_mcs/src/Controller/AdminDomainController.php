@@ -11,6 +11,7 @@ use App\Service\Domain\CreateDomainAdminService;
 use App\Service\Access\AccessControlService;
 use App\Service\Domain\DeleteDomainAdminService;
 use App\Service\Domain\ListDomainAdminService;
+use App\Service\Domain\ListDomainOptionsAdminService;
 use App\Service\Domain\PatchDomainStatusAdminService;
 use App\Service\Domain\ReadDomainAdminService;
 use App\Service\Domain\RenameDomainAdminService;
@@ -79,6 +80,27 @@ final class AdminDomainController extends AbstractController
             data: $responseDTO,
             format: 'json',
             context: ['groups' => ['domain:list']]
+        );
+
+        return new JsonResponse(
+            data: $responseData,
+            status: JsonResponse::HTTP_OK,
+            json: true
+        );
+    }
+
+    #[Route('/options', name: 'options', methods: ['GET'])]
+    public function options(
+        ListDomainOptionsAdminService $listDomainOptionsService
+    ): JsonResponse {
+        $this->accessControl->denyUnlessAdmin();
+        
+        $options = $listDomainOptionsService->listOptions();
+
+        $responseData = $this->serializer->serialize(
+            data: ['data' => $options],
+            format: 'json',
+            context: ['groups' => ['domain:option']]
         );
 
         return new JsonResponse(

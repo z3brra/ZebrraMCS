@@ -206,6 +206,18 @@ final class MailDomainGatewayService
             ['id' => $mailDomainId]
         );
     }
+
+
+    public function findAllForSelect(): array
+    {
+        $queryBuilder = $this->mailConnection->createQueryBuilder();
+        $queryBuilder->select('domain.id', 'domain.name')
+            ->from('domains', 'domain')
+            ->addOrderBy('domain.name', 'ASC');
+
+        return $queryBuilder->executeQuery()->fetchAllAssociative();
+    }
+
 }
 
 ?>

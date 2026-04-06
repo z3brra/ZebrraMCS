@@ -23,6 +23,12 @@ final class AdminReadDTO
     #[Groups(['admin:me', 'admin:read'])]
     public bool $active;
 
+    #[Groups(['admin:read'])]
+    public bool $isDeleted;
+
+    #[Groups(['admin:read'])]
+    public bool $hasMailBox;
+
     #[Groups(['admin:me', 'admin:read'])]
     public DateTimeImmutable $createdAt;
 
@@ -34,6 +40,8 @@ final class AdminReadDTO
         string $email,
         array $roles,
         bool $active,
+        bool $isDeleted,
+        bool $hasMailBox,
         DateTimeImmutable $createdAt,
         ?DateTimeImmutable $updatedAt = null,
     )
@@ -42,17 +50,21 @@ final class AdminReadDTO
         $this->email = $email;
         $this->roles = $roles;
         $this->active = $active;
+        $this->isDeleted = $isDeleted;
+        $this->hasMailBox = $hasMailBox;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
 
-    public static function fromEntity(AdminUser $admin): self
+    public static function fromEntity(AdminUser $admin, bool $hasMailBox): self
     {
         return new self(
             uuid: (string) $admin->getUuid(),
             email: (string) $admin->getEmail(),
             roles: $admin->getRoles(),
             active: $admin->isActive(),
+            isDeleted: $admin->isDeleted(),
+            hasMailBox: $hasMailBox,
             createdAt: $admin->getCreatedAt(),
             updatedAt: $admin->getUpdatedAt(),
         );

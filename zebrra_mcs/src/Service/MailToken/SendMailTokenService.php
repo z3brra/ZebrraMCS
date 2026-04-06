@@ -34,12 +34,14 @@ final class SendMailTokenService
         private readonly MailDomainGatewayService $mailDomainGateway,
         private readonly MailDomainLinkResolver $mailDomainResolver,
         private readonly MailerInterface $mailer,
+        private readonly SendMailConfig $sendMailConfig,
     ) {}
 
     public function send(MailSendRequestDTO $mailSendDTO): MailSendResponseDTO
     {
         $this->accessControl->denyUnlessPermission(Permission::MAIL_SEND);
         $this->validationService->validate($mailSendDTO, ['mail:send']);
+        $this->assertRecipientLimit($mailSendDTO);
 
         if (($mailSendDTO->textBody === null || trim($mailSendDTO->textBody) === '') &&
             ($mailSendDTO->htmlBody === null || trim($mailSendDTO->htmlBody) === '')) {
@@ -293,6 +295,33 @@ final class SendMailTokenService
         $domain = trim(substr($email, $atPos + 1));
 
         return $domain !== '' ? mb_strtolower($domain) : null;
+    }
+
+    private function assertRecipientLimit(MailSendRequestDTO $mailSendDTO): void
+    {
+        $toCount = count($mailSendDTO->to);
+        $ccCount = count($mailSendDTO->cc);
+        $bccCount = count($mailSendDTO->bcc);
+
+        $total = $toCount + $ccCount + $bccCount;
+
+        if ($total > $this->sendMailConfig->maxRecipients) {
+            throw ApiException::validation(
+                message: 'Validation error',
+                details: [
+                    'violations' => [
+                        [
+                            'property' => 'to/cc/bcc',
+                            'message' => sprintf(
+                                'Total recipients limit exceeded. Maximum allowed is %d.',
+                                $this->sendMailConfig->maxRecipients
+                            ),
+                            'code' => null,
+                        ],
+                    ],
+                ],
+            );
+        }
     }
 }
 

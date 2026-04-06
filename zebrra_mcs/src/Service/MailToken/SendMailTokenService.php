@@ -6,6 +6,7 @@ use App\DTO\Mail\{
     MailAddressDTO,
     MailSendRequestDTO,
     MailSendResponseDTO,
+    MailAttachmentDTO,
 };
 
 use App\Platform\Enum\Permission;
@@ -116,6 +117,8 @@ final class SendMailTokenService
             $email->html($mailSendDTO->htmlBody);
         }
 
+        $this->attachFiles($email, $mailSendDTO->attachments);
+
         try {
             $this->mailer->send($email);
         } catch (TransportExceptionInterface $e) {
@@ -132,6 +135,113 @@ final class SendMailTokenService
             status: 'sent',
             messageId: $email->getHeaders()->get('Message-ID')?->getBodyAsString()
         );
+    }
+
+    private function attachFiles(Email $email, array $attachments): void
+    {
+        $totalBytes = 0;
+        $maxBytesPerAttachment = 5 * 1024 * 1024;
+        $maxBytesTotal = 20 * 1024 * 1024;
+
+        foreach ($attachments as $attachment) {
+            $filename = '';
+            $contentType = null;
+            $contentBase64 = '';
+
+            if ($attachment instanceof MailAttachmentDTO) {
+                $filename = trim($attachment->filename);
+                $contentType = $attachment->contentType !== null ? trim($attachment->contentType) : null;
+                $contentBase64 = trim($attachment->contentBase64);
+            } else {
+                $filename = isset($attachment['filename']) ? trim((string) $attachment['filename']) : '';
+                $contentType = isset($attachment['contentType']) ? trim((string) $attachment['contentType']) : null;
+                $contentBase64 = isset($attachment['contentBase64']) ? trim((string) $attachment['contentBase64']) : '';
+            }
+
+            if ($filename === '') {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'attachments filename',
+                                'message' => 'Attachment filename is required.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            if ($contentBase64 === '') {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'attachments.contentBase64',
+                                'message' => 'Attachment contentBase64 is required.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $decoded = base64_decode($contentBase64, true);
+            if ($decoded === false) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'attachments.contentBase64',
+                                'message' => 'Attachment contentBase64 must be valid base64.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $size = strlen($decoded);
+            if ($size > $maxBytesPerAttachment) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'attachments',
+                                'message' => 'Attachment exceeds maximum size of 5 MB.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            $totalBytes += $size;
+            if ($totalBytes > $maxBytesTotal) {
+                throw ApiException::validation(
+                    message: 'Validation error',
+                    details: [
+                        'violations' => [
+                            [
+                                'property' => 'attachments',
+                                'message' => 'Total attachment size exceeds maximum of 20 MB.',
+                                'code' => null,
+                            ],
+                        ],
+                    ],
+                );
+            }
+
+            if ($contentType !== null && $contentType !== '') {
+                $email->attach($decoded, $filename, $contentType);
+            } else {
+                $email->attach($decoded, $filename);
+            }
+        }
     }
 
     /**

@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+    api:
+        build:
+            context: /home/admin/ZebrraMCS
+            dockerfile: docker/Dockerfile.back
+        container_name: zebrra_mcs_api
+        restart: unless-stopped
+        networks:
+            - zebrra_mcs_net
+        ports:
+            - "9004:9000"
+
+networks:
+    zebrra_mcs_net:
+        driver: bridge

@@ -1,0 +1,33 @@
+FROM php:8.2-fpm
+
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    pkg-config \
+    libssl-dev \
+    && docker-php-ext-install pdo_mysql zip \
+    && pecl install mongodb \
+    && docker-php-ext-enable mongodb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i 's|listen = 127.0.0.1:9000|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.conf
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/api
+
+COPY zebrra_mcs/ ./
+
+RUN if [ ! -f ".env" ]; then \
+        if [ -f ".env.dist" ]; then cp .env.dist .env; \
+        else echo "APP_ENV=prod\nAPP_SECRET=changeme" > .env; \
+        fi; \
+    fi
+
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --classmap-authoritative
+
+EXPOSE 9000
+
+CMD ["php-fpm"]

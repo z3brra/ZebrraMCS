@@ -42,5 +42,5 @@ jobs:
                   cd docker
                   docker-compose -p mcs down
                   docker-compose -p mcs build --no-cache
-                  docker-compose -p ecoride up -d
+                  docker-compose -p mcs up -d
                   docker system prune -f

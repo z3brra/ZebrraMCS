@@ -105,5 +105,12 @@ services:
 
     App\Service\Auth\AdminRefreshTokenService: ~
     App\Service\Auth\RefreshTokenCookieService: ~
+
+    # Send mail
+    App\Service\MailToken\SendMailConfig:
+        arguments:
+            $maxRecipients: '%env(int:SENDMAIL_MAX_RECIPIENTS)%'
+
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

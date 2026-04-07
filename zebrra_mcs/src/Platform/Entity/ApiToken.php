@@ -21,7 +21,7 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'IDX_API_TOKENS_EXPIRES_AT', columns: ['expiresAt'])]
 #[ORM\Index(name: 'IDX_API_TOKENS_LAST_USED_AT', columns: ['lastUsedAt'])]
 #[ORM\HasLifecycleCallbacks]
-final class ApiToken
+class ApiToken
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -40,21 +40,21 @@ final class ApiToken
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $active = true;
 
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $expiresAt = null;
-
     #[ORM\Column]
     private DateTimeImmutable $createdAt;
+
+    #[ORM\ManyToOne(targetEntity: AdminUser::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private AdminUser $createdByAdmin;
+
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $expiresAt = null;
 
     #[ORM\Column(nullable: true)]
     private ?DateTimeImmutable $lastUsedAt = null;
 
     #[ORM\Column(nullable: true)]
     private ?DateTimeImmutable $revokedAt = null;
-
-    #[ORM\ManyToOne(targetEntity: AdminUser::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    private AdminUser $createdByAdmin;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
